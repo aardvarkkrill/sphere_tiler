@@ -12,3 +12,5 @@ reads the tile, tiles it across the plane in the usual hexagonal tiling with ran
 In addition, it takes the tiled image and wraps it around a hemisphere (using stereographic projection) and adds a little bit of shading, then writes sphere.png
 
 That's all!
+
+Please do mention aardvarkkrill if you do anything good with this code.  And tell me about it!
