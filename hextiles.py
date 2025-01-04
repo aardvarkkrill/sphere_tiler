@@ -13,7 +13,7 @@ from pygame.math import clamp
 # Argument: name of tile file (default tile.png)
 
 # randomised rotations
-def create_canvas_and_save_output1(tile_path : str, output_path : str,
+def create_canvas_and_save_output1(tile_path: str, output_path: str,
                                    canvas_size=(1600, 1600)):
     # Initialize pygame
     pygame.init()
@@ -64,18 +64,18 @@ def draw_centered_text(surface, text, font_path, font_size, color, x, y):
 
 
 # randomised rotations of a tile
-def create_canvas_and_save_output2(tile_path, output_path,
-                                   canvas_size=(6400, 6400),
-                                   tile_scale = 1.0,
-                                   background_colour: Optional[pygame.Color]= (255, 255, 255, 255)):
+def create_canvas_and_save_output2(
+        tile_path, output_path, canvas_size=(6400, 6400), tile_scale=1.0,
+        background_colour: Optional[pygame.Color] = (255, 255, 255, 255)
+) -> pygame.Surface:
     # Create canvas
     canvas = pygame.Surface(canvas_size)
 
     # Canvas fill will be the colour we see through any transparency in the tile
     if background_colour is not None:
         canvas.fill(background_colour)
-    #canvas.fill((255, 0, 255))  # Fill with pink
-    #canvas.fill((179, 179, 179))  # Fill with grey 30% (0xB3)
+    # canvas.fill((255, 0, 255))  # Fill with pink
+    # canvas.fill((179, 179, 179))  # Fill with grey 30% (0xB3)
     # canvas.fill((255,255,255))  # Fill with white
 
     # Load image
@@ -139,11 +139,11 @@ def create_canvas_and_save_output2(tile_path, output_path,
 
     # Save canvas as image
     pygame.image.save(canvas, output_path)
+    return canvas
 
 
 # Usage example
 if __name__ == "__main__":
-
     tile = "tile.png" if len(sys.argv) <= 1 else sys.argv[1]
     tile_scale = 1.0 if len(sys.argv) <= 2 else float(sys.argv[2])
     create_canvas_and_save_output2(tile, "output.png", tile_scale=tile_scale)

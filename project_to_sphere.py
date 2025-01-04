@@ -5,7 +5,8 @@ from typing import Optional
 import pygame
 from pygame.math import clamp
 
-def project_image_to_sphere(surface: Optional[pygame.Surface],
+
+def project_image_to_sphere(sphere_surface: Optional[pygame.Surface],
                             plane: pygame.Surface,
                             radius: int,
                             shadow_amount: float = 0.3) -> pygame.Surface:
@@ -17,10 +18,8 @@ def project_image_to_sphere(surface: Optional[pygame.Surface],
 
     width, height = plane.get_size()
 
-    if surface is None:
-        sphere_surface = pygame.Surface((2 * radius, 2 * radius),
-                                        pygame.SRCALPHA)
-        sphere_surface.fill(pygame.Color(255, 255, 255, 255))
+    layer = pygame.Surface((2 * radius, 2 * radius), pygame.SRCALPHA)
+    layer.fill((0, 0, 0, 0))
 
     # looping over projected image
     for y in range(2 * radius):
@@ -73,7 +72,15 @@ def project_image_to_sphere(surface: Optional[pygame.Surface],
                 pixel_colour.b = round(pixel_colour.b * shade)
 
             # Set the pixel
-            sphere_surface.set_at((x, y), pixel_colour)
+            layer.set_at((x, y), pixel_colour)
+
+    if sphere_surface is None:
+        return layer
+
+    offset_x = sphere_surface.get_width() / 2 - radius
+    offset_y = sphere_surface.get_height() / 2 - radius
+    sphere_surface.blit(layer, (offset_x, offset_y),
+                        special_flags=pygame.BLEND_ALPHA_SDL2)
 
     return sphere_surface
 

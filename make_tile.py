@@ -112,10 +112,14 @@ def draw_function(canvas: pygame.Surface, f: DrawFunctionType,
 
 
 # Show canvas in a window until ESC is pressed.
-def show_canvas(canvas: pygame.Surface) -> None:
+def show_canvas(canvas: pygame.Surface,
+                size: Optional[Tuple[int, int]] = None,
+                title: Optional[str] = None) -> None:
     # Create a window to display the canvas
-    screen = pygame.display.set_mode((canvas.get_width(), canvas.get_height()))
-    pygame.display.set_caption("Hexagonal Tile")
+    screen = pygame.display.set_mode(
+        (canvas.get_width(), canvas.get_height()) if size is None else size)
+    if title is not None:
+        pygame.display.set_caption(title=title)
     # Main loop
     running = True
     while running:
@@ -204,6 +208,8 @@ if __name__ == "__main__":
     # image containing the boundary arcs 1 and 2, but no shading.  This is what
     # we use to limit the extent of arc 3 (which runs underneath arc 1)
     mask = tile.copy()
+
+
     # returns true if (x,y) is inside the mask, and its alpha is 0
     def check_alpha(x, y):
         try:
