@@ -36,25 +36,19 @@ def main():
         )
         pygame.image.save(pink_plane, "pink_plane.png")
 
-    max_radius = 1200
-    sphere_surface = pygame.Surface((2 * max_radius, 2 * max_radius),
+    radius = 1200
+    sphere_surface = pygame.Surface((2 * radius, 2 * radius),
                                     pygame.SRCALPHA)
     sphere_surface.fill(pygame.Color(255, 255, 255, 255))
 
-    max_radius = round(max_radius * 0.9**2)
+    sphere_surface = project_to_sphere.project_image_to_sphere(
+        sphere_surface, brain_plane, round(radius * 0.9**2), 0.7)
 
     sphere_surface = project_to_sphere.project_image_to_sphere(
-        sphere_surface, brain_plane, max_radius, 0.3)
-
-    max_radius = round(max_radius / 0.9)
+        sphere_surface, rainbow_plane, round(radius * 0.9**1), 0.5)
 
     sphere_surface = project_to_sphere.project_image_to_sphere(
-        sphere_surface, rainbow_plane, max_radius, 0.3)
-
-    max_radius = pygame.math.clamp(round(max_radius / 0.9), 0, max_radius)
-
-    sphere_surface = project_to_sphere.project_image_to_sphere(
-        sphere_surface, pink_plane, max_radius, 0.3)
+        sphere_surface, pink_plane, round(radius * 0.9**0), 0.3)
 
     pygame.image.save(sphere_surface, "nested_spheres.png")
     make_tile.show_canvas(sphere_surface, (600, 600))
