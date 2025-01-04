@@ -1,5 +1,6 @@
 import sys
 import os
+import random
 
 import pygame
 
@@ -29,6 +30,7 @@ def main():
 
     if os.path.exists("pink_plane.png"):
         pink_plane = pygame.image.load("pink_plane.png")
+
     else:
         pink_plane = hextiles.create_random_hexagonal_tiled_surface(
             "pink_tile.png", (6400, 6400), 1.0,
@@ -49,18 +51,26 @@ def main():
     # sphere_surface = project_to_sphere.project_image_to_sphere(
     #     sphere_surface, rainbow_plane, round(radius * 0.9**1), 0.5)
 
-    pw, ph = pink_plane.get_size()
+    # assume we need 4*radius pixels of the plane for each projection, choose
+    # a random point in the surface to centre the sphere
+    def random_point(surface) -> (float, float):
+        pw, ph = surface.get_size()
+        return (
+            (pw - radius * 4) * random.random() + radius * 2,
+            (pw - radius * 4) * random.random() + radius * 2)
+
+    # how much smaller is the radius of each nested layer than its parent
     shrink = 0.9
 
-    # sphere_surface = project_to_sphere.project_image_to_sphere(
-    #     sphere_surface, pink_plane, round(radius * shrink ** 3), 0.9,
-    #     sphere_centre_xy=(pw * 3/4, ph * 3/4), sphere_centre_z=radius * shrink ** 2)
+    sphere_surface = project_to_sphere.project_image_to_sphere(
+        sphere_surface, pink_plane, round(radius * shrink ** 3), 0.9,
+        sphere_centre_xy=random_point(pink_plane), sphere_centre_z=radius * shrink ** 3)
     sphere_surface = project_to_sphere.project_image_to_sphere(
         sphere_surface, pink_plane, round(radius * shrink ** 2), 0.7,
-        sphere_centre_xy=(pw * 3/4, ph * 3/4), sphere_centre_z=radius * shrink ** 2)
+        sphere_centre_xy=random_point(pink_plane), sphere_centre_z=radius * shrink ** 2)
     sphere_surface = project_to_sphere.project_image_to_sphere(
         sphere_surface, pink_plane, round(radius * shrink ** 1), 0.5,
-        sphere_centre_xy=(pw*1/4, ph*1/4), sphere_centre_z=radius * shrink ** 1)
+        sphere_centre_xy=random_point(pink_plane), sphere_centre_z=radius * shrink ** 1)
     sphere_surface = project_to_sphere.project_image_to_sphere(
         sphere_surface, pink_plane, round(radius * shrink ** 0), 0.3)
 
