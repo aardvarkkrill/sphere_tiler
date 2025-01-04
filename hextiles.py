@@ -2,14 +2,16 @@ import math
 import pygame
 import random
 import numpy
+import sys
 
 from pygame.math import clamp
 
 
 # Take a hexagonal tile and repeat it over the plane, with random orientation.
+# Argument: name of tile file (default tile.png)
 
 # randomised rotations
-def create_canvas_and_save_output1(image_path, output_path,
+def create_canvas_and_save_output1(tile_path : str, output_path : str,
                                    canvas_size=(1600, 1600)):
     # Initialize pygame
     pygame.init()
@@ -19,7 +21,7 @@ def create_canvas_and_save_output1(image_path, output_path,
     canvas.fill((255, 255, 255))  # Fill with white
 
     # Load image
-    full_tile = pygame.image.load("tile.png")
+    full_tile = pygame.image.load(tile_path)
     scaled_tile = pygame.transform.scale_by(full_tile, 0.5)
 
     tile_height = scaled_tile.get_height()
@@ -60,7 +62,7 @@ def draw_centered_text(surface, text, font_path, font_size, color, x, y):
 
 
 # randomised rotations avoiding dots
-def create_canvas_and_save_output2(image_path, output_path,
+def create_canvas_and_save_output2(tile_path, output_path,
                                    canvas_size=(6400, 6400),
                                    tile_scale = 1.0):
     # Initialize pygame
@@ -75,7 +77,7 @@ def create_canvas_and_save_output2(image_path, output_path,
     canvas.fill((255,255,255))  # Fill with white
 
     # Load image
-    full_tile = pygame.image.load(image_path)
+    full_tile = pygame.image.load(tile_path)
     scaled_tile = pygame.transform.smoothscale_by(full_tile, tile_scale)
 
     tile_height = scaled_tile.get_height()
@@ -209,5 +211,6 @@ def project_image_to_sphere(image: pygame.Surface,
 
 # Usage example
 if __name__ == "__main__":
-    # create_canvas_and_save_output1("input.png", "output.png")
-    create_canvas_and_save_output2("tile.png", "output.png")
+    tile = "tile.png" if len(sys.argv) <= 1 else sys.argv[1]
+    tile_scale = 1.0 if len(sys.argv) <= 2 else float(sys.argv[2])
+    create_canvas_and_save_output2(tile, "output.png", tile_scale=tile_scale)
