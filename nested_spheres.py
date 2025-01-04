@@ -41,20 +41,20 @@ def main():
                                     pygame.SRCALPHA)
     sphere_surface.fill(pygame.Color(255, 255, 255, 255))
 
-    make_tile.show_canvas(sphere_surface, (600,600))
+    max_radius = round(max_radius * 0.9**2)
 
     sphere_surface = project_to_sphere.project_image_to_sphere(
-        sphere_surface, pink_plane, round(max_radius * 0.8), 0.3)
+        sphere_surface, brain_plane, max_radius, 0.3)
 
-    make_tile.show_canvas(sphere_surface, (600,600))
-
-    sphere_surface = project_to_sphere.project_image_to_sphere(
-        sphere_surface, rainbow_plane, round(max_radius * 0.9), 0.3)
-
-    make_tile.show_canvas(sphere_surface, (600,600))
+    max_radius = round(max_radius / 0.9)
 
     sphere_surface = project_to_sphere.project_image_to_sphere(
-        sphere_surface, brain_plane, round(max_radius * 1.0), 0.3)
+        sphere_surface, rainbow_plane, max_radius, 0.3)
+
+    max_radius = pygame.math.clamp(round(max_radius / 0.9), 0, max_radius)
+
+    sphere_surface = project_to_sphere.project_image_to_sphere(
+        sphere_surface, pink_plane, max_radius, 0.3)
 
     pygame.image.save(sphere_surface, "nested_spheres.png")
     make_tile.show_canvas(sphere_surface, (600, 600))

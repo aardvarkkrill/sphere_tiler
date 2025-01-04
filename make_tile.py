@@ -120,6 +120,15 @@ def show_canvas(canvas: pygame.Surface,
         (canvas.get_width(), canvas.get_height()) if size is None else size)
     if title is not None:
         pygame.display.set_caption(title=title)
+    if (canvas.get_width() > screen.get_width() or
+            canvas.get_height() > screen.get_height()):
+        canvas = pygame.transform.smoothscale(canvas, screen.get_size())
+
+    # Clear the screen and draw the canvas
+    screen.fill((255, 192, 255))
+    screen.blit(canvas, (0, 0))
+    pygame.display.flip()
+
     # Main loop
     running = True
     while running:
@@ -128,10 +137,6 @@ def show_canvas(canvas: pygame.Surface,
                 running = False
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 running = False
-        # Clear the screen and draw the canvas
-        screen.fill((255, 192, 255))
-        screen.blit(canvas, (0, 0))
-        pygame.display.flip()
 
     pygame.quit()
 
