@@ -11,23 +11,23 @@ import show_canvas
 
 
 def main():
-    if os.path.exists("brain_plane.png"):
-        brain_plane = pygame.image.load("brain_plane.png")
-    else:
-        brain_plane = hextiles.create_random_hexagonal_tiled_surface(
-            "brain_tile.png", (6400, 6400), 1.0,
-            pygame.Color(0, 0, 0, 0)
-        )
-        pygame.image.save(brain_plane, "brain_plane.png")
-
-    if os.path.exists("rainbow_plane.png"):
-        rainbow_plane = pygame.image.load("rainbow_plane.png")
-    else:
-        rainbow_plane = hextiles.create_random_hexagonal_tiled_surface(
-            "rainbow_tile.png", (6400, 6400), 0.5,
-            pygame.Color(0, 0, 0, 0)
-        )
-        pygame.image.save(rainbow_plane, "rainbow_plane.png")
+    # if os.path.exists("brain_plane.png"):
+    #     brain_plane = pygame.image.load("brain_plane.png")
+    # else:
+    #     brain_plane = hextiles.create_random_hexagonal_tiled_surface(
+    #         "brain_tile.png", (6400, 6400), 1.0,
+    #         pygame.Color(0, 0, 0, 0)
+    #     )
+    #     pygame.image.save(brain_plane, "brain_plane.png")
+    #
+    # if os.path.exists("rainbow_plane.png"):
+    #     rainbow_plane = pygame.image.load("rainbow_plane.png")
+    # else:
+    #     rainbow_plane = hextiles.create_random_hexagonal_tiled_surface(
+    #         "rainbow_tile.png", (6400, 6400), 0.5,
+    #         pygame.Color(0, 0, 0, 0)
+    #     )
+    #     pygame.image.save(rainbow_plane, "rainbow_plane.png")
 
     if os.path.exists("pink_plane.png"):
         pink_plane = pygame.image.load("pink_plane.png")
