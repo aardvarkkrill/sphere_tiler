@@ -47,6 +47,24 @@ class PerimeterPoint(object):
 def angle(a: Point, b: Point) -> float:
     return math.atan2(- b.y + a.y, b.x - a.x)
 
+def arc(surface: pygame.Surface, cxy: Point, radius: float, theta0, theta1,
+        colour: pygame.Color, width:int):
+
+    # cxy = pygame.math.Vector2(*surface.get_size()) / 2
+
+    if theta0 > theta1:
+        theta1 += 2 * math.pi
+
+    def point(theta):
+        return cxy + radius * pygame.math.Vector2(math.cos(theta), -math.sin(theta))
+
+    p0 = point(theta0)
+    for i in range(101):
+        theta = theta0 + (theta1 - theta0) * i / 100
+        p1 = point(theta)
+        pygame.draw.line(surface, colour, p0, p1, width)
+        p0 = p1
+
 
 def rainbow_arc(surface: pygame.Surface, polygon: Polygon, start: int,
                 finish: int, colourfun: ColourFunction) -> None:
@@ -74,10 +92,11 @@ def rainbow_arc(surface: pygame.Surface, polygon: Polygon, start: int,
             theta_a = angle(centre, point_a)
             theta_b = angle(centre, point_b)
             radius = (point_a - centre).length()
-            pygame.draw.arc(surface, colour,
-                            pygame.Rect(centre.x - radius, centre.y - radius,
-                                        2 * radius, 2 * radius),
-                            theta_b, theta_a, 4)
+            arc(surface, centre, radius, theta_b, theta_a, colour, 3)
+            # pygame.draw.arc(surface, colour,
+            #                 pygame.Rect(centre.x - radius, centre.y - radius,
+            #                             2 * radius, 2 * radius),
+            #                 theta_b, theta_a, 4)
             # pygame.draw.circle(surface, pygame.color.THECOLORS["black"], point_a, 5)
             # pygame.draw.circle(surface, pygame.color.THECOLORS["white"], point_b, 5)
             # pygame.draw.circle(surface, pygame.color.THECOLORS["green"], centre, 5)
