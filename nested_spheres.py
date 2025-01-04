@@ -40,15 +40,29 @@ def main():
     sphere_surface = pygame.Surface((2 * radius, 2 * radius),
                                     pygame.SRCALPHA)
     sphere_surface.fill(pygame.Color(255, 255, 255, 255))
+    pygame.draw.circle(sphere_surface, pygame.Color(50, 50, 50, 255),
+                       center=(radius, radius), radius=radius, width=0)
 
-    sphere_surface = project_to_sphere.project_image_to_sphere(
-        sphere_surface, brain_plane, round(radius * 0.9**2), 0.7)
+    # sphere_surface = project_to_sphere.project_image_to_sphere(
+    #     sphere_surface, brain_plane, round(radius * 0.9**2), 0.7)
+    #
+    # sphere_surface = project_to_sphere.project_image_to_sphere(
+    #     sphere_surface, rainbow_plane, round(radius * 0.9**1), 0.5)
 
-    sphere_surface = project_to_sphere.project_image_to_sphere(
-        sphere_surface, rainbow_plane, round(radius * 0.9**1), 0.5)
+    pw, ph = pink_plane.get_size()
+    shrink = 0.9
 
+    # sphere_surface = project_to_sphere.project_image_to_sphere(
+    #     sphere_surface, pink_plane, round(radius * shrink ** 3), 0.9,
+    #     sphere_centre_xy=(pw * 3/4, ph * 3/4), sphere_centre_z=radius * shrink ** 2)
     sphere_surface = project_to_sphere.project_image_to_sphere(
-        sphere_surface, pink_plane, round(radius * 0.9**0), 0.3)
+        sphere_surface, pink_plane, round(radius * shrink ** 2), 0.7,
+        sphere_centre_xy=(pw * 3/4, ph * 3/4), sphere_centre_z=radius * shrink ** 2)
+    sphere_surface = project_to_sphere.project_image_to_sphere(
+        sphere_surface, pink_plane, round(radius * shrink ** 1), 0.5,
+        sphere_centre_xy=(pw*1/4, ph*1/4), sphere_centre_z=radius * shrink ** 1)
+    sphere_surface = project_to_sphere.project_image_to_sphere(
+        sphere_surface, pink_plane, round(radius * shrink ** 0), 0.3)
 
     pygame.image.save(sphere_surface, "nested_spheres.png")
     make_tile.show_canvas(sphere_surface, (600, 600))

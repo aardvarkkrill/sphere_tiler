@@ -4,16 +4,18 @@ from typing import Optional, Tuple
 
 import pygame
 from pygame.math import clamp
+from sympy import ceiling
 
 
-def project_image_to_sphere(sphere_surface: Optional[pygame.Surface],
-                            plane: pygame.Surface,
-                            radius: int,
-                            shadow_amount: float = 0.3,
-                            sphere_centre: Optional[Tuple[
-                                float, float, float]] = None) -> pygame.Surface:
+def project_image_to_sphere(
+        sphere_surface: Optional[pygame.Surface],
+        plane: pygame.Surface,
+        radius: float,
+        shadow_amount: float = 0.3,
+        sphere_centre_xy: Optional[Tuple[float, float]] = None,
+        sphere_centre_z: Optional[float] = None) -> pygame.Surface:
     """ Given an image on a surface, wrap it around a sphere and project that
-    orthogonally and centrally on a square plane of side 2 * radius.
+    orthogonally and centrally on a square plane of side ceiling(2 * radius).
     The wrapping is a stereographic projection of the plane onto the southern
         hemisphere of a plane above the surface.
     If surface is none, a white, minimum size (2*radius square) surface will be
@@ -26,19 +28,18 @@ def project_image_to_sphere(sphere_surface: Optional[pygame.Surface],
 
     width, height = plane.get_size()
 
-    layer = pygame.Surface((2 * radius, 2 * radius), pygame.SRCALPHA)
+    layer = pygame.Surface((int(ceiling(2 * radius)), int(ceiling(2 * radius))),
+                           pygame.SRCALPHA)
     layer.fill((0, 0, 0, 0))
 
-    if sphere_centre is None:
-        cx, cy, cz = (width / 2, height / 2, radius)
-    else :
-        cx, cy, cz = sphere_centre
-
-    # TODO: make use of cz
+    cx, cy = (width / 2, height / 2) \
+        if (sphere_centre_xy is None) \
+        else sphere_centre_xy
+    cz = radius if sphere_centre_z is None else sphere_centre_z
 
     # looping over projected image
-    for y in range(2 * radius):
-        for x in range(2 * radius):
+    for y in range(int(ceiling(2 * radius))):
+        for x in range(int(ceiling(2 * radius))):
             dx = x - radius
             dy = y - radius
             # distance from projected point to centre of projected image
@@ -53,7 +54,7 @@ def project_image_to_sphere(sphere_surface: Optional[pygame.Surface],
                 # angle subtended at north pole
                 theta = 0.5 * math.asin(s / radius)
                 # distance to original point
-                d = 2 * radius * math.tan(theta)
+                d = (radius + cz) * math.tan(theta)
                 # original point
                 u = cx + dx * d / s
                 v = cy + dy * d / s
@@ -70,15 +71,12 @@ def project_image_to_sphere(sphere_surface: Optional[pygame.Surface],
                 latitude = math.acos(s / radius)
                 longitude = math.atan2(dx, dy)
 
-
                 # See https://en.wikipedia.org/wiki/Haversine_formula
                 def hav(angle):
                     return 0.5 * (1 - math.cos(angle))
 
-
                 def ahav(x):
                     return math.acos(clamp(1 - 2 * x, -1, 1))
-
 
                 hav_theta = hav(light_lat - latitude) + math.cos(
                     latitude) * math.cos(light_lat) * hav(light_lon - longitude)
@@ -102,6 +100,7 @@ def project_image_to_sphere(sphere_surface: Optional[pygame.Surface],
                         special_flags=pygame.BLEND_ALPHA_SDL2)
 
     return sphere_surface
+
 
 # Usage example
 if __name__ == "__main__":
