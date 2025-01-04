@@ -71,6 +71,7 @@ def rainbow_arc(surface: pygame.Surface, polygon: Polygon, start: int,
     N = polygon.N
     size = 0.6 # fraction of side covered
     count = round(polygon.side * size)
+
     distance = (finish - start) % N
     even = distance % 2 == 0
 
