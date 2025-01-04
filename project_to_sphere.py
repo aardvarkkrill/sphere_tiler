@@ -47,14 +47,14 @@ def project_image_to_sphere(sphere_surface: Optional[pygame.Surface],
             pixel_colour = plane.get_at((uu, vv))
 
             # Attached Shadow
-            # to calculate shadows, assume the north pole is towards us (this is
-            # a different parametrisation to the above)
-            light_lat = - math.pi / 4
-            light_lon = - math.pi / 4
-            latitude = math.acos(s / radius)
-            longitude = math.atan2(dx, dy)
-
             if shadow_amount > 0:
+                # to calculate shadows, assume the north pole is towards us (this is
+                # a different parametrisation to the above)
+                light_lat = - math.pi / 4
+                light_lon = - math.pi / 4
+                latitude = math.acos(s / radius)
+                longitude = math.atan2(dx, dy)
+
                 # See https://en.wikipedia.org/wiki/Haversine_formula
                 def hav(angle):
                     return 0.5 * (1 - math.cos(angle))

@@ -3,7 +3,7 @@
 playing with tiles mapped onto a sphere
 
 Quick help:
-you'll need to install python, with modules pygame and numpy.  I used python 3.12 and pygame 2.5.2.
+you'll need to install python, with modules pygame and numpy. I used python 3.12 and pygame 2.5.2.
 
 `$ python make_tile.py`
 or `$ python rainbow_tile.py`

@@ -12,26 +12,29 @@ def main():
     if os.path.exists("brain_plane.png"):
         brain_plane = pygame.image.load("brain_plane.png")
     else:
-        brain_plane = hextiles.create_canvas_and_save_output2(
-            "brain_tile.png", "brain_plane.png", (6400, 6400), 1.0,
+        brain_plane = hextiles.create_random_hexagonal_tiled_surface(
+            "brain_tile.png", (6400, 6400), 1.0,
             pygame.Color(0, 0, 0, 0)
         )
+        pygame.image.save(brain_plane, "brain_plane.png")
 
     if os.path.exists("rainbow_plane.png"):
         rainbow_plane = pygame.image.load("rainbow_plane.png")
     else:
-        rainbow_plane = hextiles.create_canvas_and_save_output2(
-            "rainbow_tile.png", "rainbow_plane.png", (6400, 6400), 0.5,
+        rainbow_plane = hextiles.create_random_hexagonal_tiled_surface(
+            "rainbow_tile.png", (6400, 6400), 0.5,
             pygame.Color(0, 0, 0, 0)
         )
+        pygame.image.save(rainbow_plane, "rainbow_plane.png")
 
     if os.path.exists("pink_plane.png"):
         pink_plane = pygame.image.load("pink_plane.png")
     else:
-        pink_plane = hextiles.create_canvas_and_save_output2(
-            "pink_tile.png", "pink_plane.png", (6400, 6400), 1.0,
+        pink_plane = hextiles.create_random_hexagonal_tiled_surface(
+            "pink_tile.png", (6400, 6400), 1.0,
             pygame.Color(0, 0, 0, 0)
         )
+        pygame.image.save(pink_plane, "pink_plane.png")
 
     max_radius = 1200
     sphere_surface = pygame.Surface((2 * max_radius, 2 * max_radius),
@@ -43,8 +46,6 @@ def main():
     sphere_surface = project_to_sphere.project_image_to_sphere(
         sphere_surface, pink_plane, round(max_radius * 0.8), 0.3)
 
-    for i in range(sphere_surface.get_width()//2 - 100, sphere_surface.get_width()//2 + 100, 5):
-        print(sphere_surface.get_at((i, sphere_surface.get_height()//2)))
     make_tile.show_canvas(sphere_surface, (600,600))
 
     sphere_surface = project_to_sphere.project_image_to_sphere(
