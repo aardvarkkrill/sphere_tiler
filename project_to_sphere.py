@@ -83,11 +83,12 @@ if __name__ == "__main__":
     def main():
         plane_file = "output.png" if len(sys.argv) <= 1 else sys.argv[1]
         radius = 1200 if len(sys.argv) <= 2 else int(sys.argv[2])
+        shade = 0.3 if len(sys.argv) <= 3 else float(sys.argv[3])
 
         plane = pygame.image.load(plane_file)
 
         p = project_image_to_sphere(surface=None, plane=plane,
-                                    radius=radius)
+                                    radius=radius, shadow_amount=shade)
         pygame.image.save(p, "sphere.png")
         pygame.quit()
 
