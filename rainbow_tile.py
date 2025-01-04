@@ -102,7 +102,7 @@ def rainbow_arc(surface: pygame.Surface, polygon: Polygon, start: int,
             # pygame.draw.circle(surface, pygame.color.THECOLORS["white"], point_b, 5)
             # pygame.draw.circle(surface, pygame.color.THECOLORS["green"], centre, 5)
             # pygame.draw.line(surface, pygame.color.THECOLORS["cyan"], point_a, point_b, 2)
-        # show_canvas(surface)
+        # show_canvas.show_canvas(surface)
 
 
 if __name__ == "__main__":
@@ -117,7 +117,7 @@ if __name__ == "__main__":
 
         # for p in points:
         #     pygame.draw.circle(tile, pygame.color.THECOLORS["black"], p, 5)
-        # show_canvas(tile)
+        # show_canvas.show_canvas(tile)
 
         def rainbow(fraction: float) -> pygame.Color:
             c = pygame.Color(0)
@@ -133,7 +133,7 @@ if __name__ == "__main__":
         # Remove redundant/referenced code for undefined arcs
         pass
 
-        show_canvas(tile)
+        show_canvas.show_canvas(tile)
         pygame.image.save(tile, "rainbow.png")
 
         pygame.quit()

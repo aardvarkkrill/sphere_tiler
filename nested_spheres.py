@@ -7,6 +7,7 @@ import pygame
 import hextiles
 import project_to_sphere
 import make_tile
+import show_canvas
 
 
 def main():
@@ -75,7 +76,6 @@ def main():
         sphere_surface, pink_plane, round(radius * shrink ** 0), 0.3)
 
     pygame.image.save(sphere_surface, "nested_spheres.png")
-    make_tile.show_canvas(sphere_surface, (600, 600))
-
+    show_canvas.show_canvas(sphere_surface, (600, 600))
 
 main()
