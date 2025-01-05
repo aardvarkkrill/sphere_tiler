@@ -170,8 +170,7 @@ class Arc(object):
                           self.theta0, self.theta1)
 
 
-if __name__ == "__main__":
-    pygame.init()
+def brain_tile() -> pygame.Surface:
     height = 400
     tile, side, points = create_canvas(height=height)
 
@@ -210,5 +209,11 @@ if __name__ == "__main__":
     arc2.draw_shading(shading_tile, colour, 4, 20)
     tile.blit(shading_tile, (0, 0), special_flags=pygame.BLEND_ALPHA_SDL2)
 
+    return tile
+
+
+if __name__ == "__main__":
+
+    tile = brain_tile()
     show_canvas.show_canvas(tile)
     pygame.image.save(tile, "brain_tile.png")
