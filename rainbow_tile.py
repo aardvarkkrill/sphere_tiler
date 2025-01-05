@@ -1,10 +1,11 @@
+import sys
 import math
-from itertools import count
 
 import pygame
 from typing import Tuple, Optional, List
 from collections.abc import Callable
 
+from sympy import ceiling
 from sympy.core.numbers import Infinity
 
 from brain_tile import create_canvas, create_hexagonal_mask, show_canvas
@@ -47,20 +48,30 @@ class PerimeterPoint(object):
 def angle(a: Point, b: Point) -> float:
     return math.atan2(- b.y + a.y, b.x - a.x)
 
-def arc(surface: pygame.Surface, cxy: Point, radius: float, theta0, theta1,
-        colour: pygame.Color, width:int):
 
-    # cxy = pygame.math.Vector2(*surface.get_size()) / 2
+def arc(surface: pygame.Surface, cxy: Point, radius: float, theta0, theta1,
+        colour: pygame.Color, width: int):
+    """ draws an arc of a circle of given centre and radius between two angles.
+        The drawing is always anti-clockwise from theta0 to theta1.
+    """
 
     if theta0 > theta1:
         theta1 += 2 * math.pi
 
     def point(theta):
-        return cxy + radius * pygame.math.Vector2(math.cos(theta), -math.sin(theta))
+        return cxy + radius * pygame.math.Vector2(math.cos(theta),
+                                                  -math.sin(theta))
 
+    if radius < 3:
+        # approx 1 step per 45 degrees.
+        steps = int(ceiling((theta1 - theta0) / (math.pi / 4) + 1))
+    else:
+        # approx 2 pixels per step
+        steps = max(2, int(ceiling((theta1 - theta0) * radius / 2)))
+    delta = (theta1 - theta0) / (steps - 1)
     p0 = point(theta0)
-    for i in range(101):
-        theta = theta0 + (theta1 - theta0) * i / 100
+    for i in range(steps):
+        theta = theta0 + i * delta
         p1 = point(theta)
         pygame.draw.line(surface, colour, p0, p1, width)
         p0 = p1
@@ -69,12 +80,14 @@ def arc(surface: pygame.Surface, cxy: Point, radius: float, theta0, theta1,
 def rainbow_arc(surface: pygame.Surface, polygon: Polygon,
                 start: int, finish: int,
                 colourfun: ColourFunction,
-                extent: float = 0.6) -> None:
+                extent: float = 0.6,
+                overshoot: float = 0.01) -> None:
     """ Draws a ribbon of arcs between polygon sides of index start and finish,
-        covering a fraction "extent" [0,1], and centered on each edge.  The
-        arcs meet the edges perpendicularly.
+        covering a centred fraction "extent" [0,1] of each edge.
+        The arcs meet the edges perpendicularly.
         ColourFunction is called with parameter 0 at the outsides of the ribbon,
              1 at the centre (so the ribbon colours are symmetric.)
+        The arc overshoots the edges by overshoot radians.
         NOTE: currently implemented only for hexagons
     """
     N = polygon.N
@@ -84,8 +97,8 @@ def rainbow_arc(surface: pygame.Surface, polygon: Polygon,
     distance = (finish - start) % N
     even = distance % 2 == 0
 
-    line = distance == 3
-    centre = PerimeterPoint(start + [0,1,0,2,5,0][distance],
+    line = (distance == 3)
+    centre = PerimeterPoint(start + [0, 1, 0, 2, 5, 0][distance],
                             [0.5, 0, 2, 0, 0.5, 0][distance]).to_point(polygon)
     for i in range(count):
         fraction = i / count
@@ -101,9 +114,12 @@ def rainbow_arc(surface: pygame.Surface, polygon: Polygon,
             theta_a = angle(centre, point_a)
             theta_b = angle(centre, point_b)
             radius = (point_a - centre).length()
-            arc(surface, centre, radius, theta_b, theta_a, colour, 3)
+            arc(surface, centre, radius,
+                theta_b - overshoot, theta_a + overshoot,
+                colour, width=3)
 
-def rainbow_tile() -> pygame.Surface:
+
+def rainbow_tile(extent: float = 0.6) -> pygame.Surface:
     """ creates the rainbow tile"""
     pygame.init()
     height = 800
@@ -122,10 +138,11 @@ def rainbow_tile() -> pygame.Surface:
             100)  # HSV: hue, saturation, value, alpha
         return c
 
-    rainbow_arc(tile, polygon, 1, 2, rainbow)
-    rainbow_arc(tile, polygon, 4, 5, rainbow)
-    rainbow_arc(tile, polygon, 0, 3, rainbow)
+    rainbow_arc(tile, polygon, 1, 2, rainbow, extent=extent)
+    rainbow_arc(tile, polygon, 4, 5, rainbow, extent=extent)
+    rainbow_arc(tile, polygon, 0, 3, rainbow, extent=extent)
     return tile
+
 
 def pink_tile() -> pygame.Surface:
     """ creates the pink tile and saves it to xxx"""
@@ -157,6 +174,7 @@ def pink_tile() -> pygame.Surface:
 
 
 if __name__ == "__main__":
-    tile = rainbow_tile()
+    if len(sys.argv) < 1 or sys.argv[1] == "rainbow":
+        tile = rainbow_tile()
     pygame.image.save(tile, "rainbow_tile.png")
     show_canvas.show_canvas(tile)
