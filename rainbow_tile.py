@@ -190,21 +190,16 @@ def blend_colours_dynamic(colour1: MetaColourFunction,
     return f
 
 
-def pink_tile() -> pygame.Surface:
-    """ creates the pink tile
-        TODO: add the crossover shading
-    """
+def pink_tile(base_colour : pygame.Color
+              = pygame.Color(255, 0, 255, 255)) -> pygame.Surface:
+    """ builds the pink hexagonal tile (or, base it on any other colour) """
     pygame.init()
     height = 800
     tile, side, points = create_canvas(height=height)
 
     polygon = Polygon(points, height, side)
 
-    # for p in points:
-    #     pygame.draw.circle(tile, pygame.color.THECOLORS["black"], p, 5)
-    # show_canvas.show_canvas(tile)
-
-    pink = pygame.Color(255, 0, 255, 255)
+    pink = base_colour
     black = pygame.Color(0, 0, 0, 255)
     pink_shade = blend_colours_dynamic(pink, black, peak=0.35, spread=0.1)
 
