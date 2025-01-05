@@ -7,7 +7,7 @@ from collections.abc import Callable
 
 from sympy.core.numbers import Infinity
 
-from make_tile import create_canvas, create_hexagonal_mask, show_canvas
+from brain_tile import create_canvas, create_hexagonal_mask, show_canvas
 
 #        2___1      ^
 #       /     \     |
@@ -66,11 +66,20 @@ def arc(surface: pygame.Surface, cxy: Point, radius: float, theta0, theta1,
         p0 = p1
 
 
-def rainbow_arc(surface: pygame.Surface, polygon: Polygon, start: int,
-                finish: int, colourfun: ColourFunction) -> None:
+def rainbow_arc(surface: pygame.Surface, polygon: Polygon,
+                start: int, finish: int,
+                colourfun: ColourFunction,
+                extent: float = 0.6) -> None:
+    """ Draws a ribbon of arcs between polygon sides of index start and finish,
+        covering a fraction "extent" [0,1], and centered on each edge.  The
+        arcs meet the edges perpendicularly.
+        ColourFunction is called with parameter 0 at the outsides of the ribbon,
+             1 at the centre (so the ribbon colours are symmetric.)
+        NOTE: currently implemented only for hexagons
+    """
     N = polygon.N
-    size = 0.6 # fraction of side covered
-    count = round(polygon.side * size)
+    assert N == 6
+    count = round(polygon.side * extent)
 
     distance = (finish - start) % N
     even = distance % 2 == 0
@@ -78,10 +87,9 @@ def rainbow_arc(surface: pygame.Surface, polygon: Polygon, start: int,
     line = distance == 3
     centre = PerimeterPoint(start + [0,1,0,2,5,0][distance],
                             [0.5, 0, 2, 0, 0.5, 0][distance]).to_point(polygon)
-    # pygame.draw.circle(surface, pygame.color.THECOLORS["green"], centre, 5)
     for i in range(count):
         fraction = i / count
-        p1 = size * (i / count - 0.5) + 0.5
+        p1 = extent * (i / count - 0.5) + 0.5
         p2 = 1 - p1
         point_a = PerimeterPoint(start, p1).to_point(polygon)
         point_b = PerimeterPoint(finish, p2).to_point(polygon)
@@ -94,15 +102,6 @@ def rainbow_arc(surface: pygame.Surface, polygon: Polygon, start: int,
             theta_b = angle(centre, point_b)
             radius = (point_a - centre).length()
             arc(surface, centre, radius, theta_b, theta_a, colour, 3)
-            # pygame.draw.arc(surface, colour,
-            #                 pygame.Rect(centre.x - radius, centre.y - radius,
-            #                             2 * radius, 2 * radius),
-            #                 theta_b, theta_a, 4)
-            # pygame.draw.circle(surface, pygame.color.THECOLORS["black"], point_a, 5)
-            # pygame.draw.circle(surface, pygame.color.THECOLORS["white"], point_b, 5)
-            # pygame.draw.circle(surface, pygame.color.THECOLORS["green"], centre, 5)
-            # pygame.draw.line(surface, pygame.color.THECOLORS["cyan"], point_a, point_b, 2)
-        # show_canvas.show_canvas(surface)
 
 
 if __name__ == "__main__":
@@ -130,11 +129,8 @@ if __name__ == "__main__":
         rainbow_arc(tile, polygon, 4, 5, rainbow)
         rainbow_arc(tile, polygon, 0, 3, rainbow)
 
-        # Remove redundant/referenced code for undefined arcs
-        pass
-
         show_canvas.show_canvas(tile)
-        pygame.image.save(tile, "rainbow.png")
+        pygame.image.save(tile, "rainbow_tile.png")
 
         pygame.quit()
 

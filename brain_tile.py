@@ -211,4 +211,4 @@ if __name__ == "__main__":
     tile.blit(shading_tile, (0, 0), special_flags=pygame.BLEND_ALPHA_SDL2)
 
     show_canvas.show_canvas(tile)
-    pygame.image.save(tile, "tile.png")
+    pygame.image.save(tile, "brain_tile.png")

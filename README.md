@@ -5,17 +5,17 @@ playing with tiles mapped onto a sphere
 Quick help:
 you'll need to install python, with modules pygame and numpy. I used python 3.12 and pygame 2.5.2.
 
-`$ python make_tile.py`
+`$ python brain_tile.py`
 or `$ python rainbow_tile.py`
 
-creates a file tile.png, containing a regular hexagonal tile. The tile must be transparent (alpha=0) outside the
+creates a file {brain,rainbow}_tile.png, containing a regular hexagonal tile. The tile must be transparent (alpha=0) outside the
 hexagon. The hexagon has horizontal sides aligned with the top and bottom of the image.
 
 `$ python hextiles.py <tile_file> <tile_scale>`
 
 reads the tile file (default `tile.png`) scales it (default 1.0) and tiles it across the plane in the usual hexagonal
 tiling with random rotations
-and reflections (with a background colour added) and creates output.png
+and reflections (with a background colour added) and creates `output.png`
 
 `<tile_file>` defaults to `tile.png`
 

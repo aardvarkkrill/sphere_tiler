@@ -6,7 +6,7 @@ import pygame
 
 import hextiles
 import project_to_sphere
-import make_tile
+import brain_tile
 import show_canvas
 
 
