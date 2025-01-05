@@ -38,7 +38,12 @@ def project_image_to_sphere(
     cz = radius if sphere_centre_z is None else sphere_centre_z
 
     # looping over projected image
-    for y in range(int(ceiling(2 * radius))):
+    num_tiles_y = int(ceiling(2 * radius))
+    for y in range(num_tiles_y, 0, -1):
+        progress = (y+1) / num_tiles_y * 100  # Calculate progress percentage
+        sys.stdout.write(f"\rSphere wrapping Progress: {progress:.0f}%")  # Overwrite the progress line
+        sys.stdout.flush()  # Ensure the progress line gets updated immediately
+
         for x in range(int(ceiling(2 * radius))):
             dx = x - radius
             dy = y - radius
@@ -99,6 +104,8 @@ def project_image_to_sphere(
     sphere_surface.blit(layer, (offset_x, offset_y),
                         special_flags=pygame.BLEND_ALPHA_SDL2)
 
+    sys.stdout.write("\r")  # Clear the progress line
+    sys.stdout.flush()  # Ensure the progress line gets updated immediately
     return sphere_surface
 
 

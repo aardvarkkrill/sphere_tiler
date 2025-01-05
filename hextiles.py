@@ -111,7 +111,7 @@ def create_random_hexagonal_tiled_surface(
     for row in range(num_tiles_y):
 
         progress = (row + 1) / num_tiles_y * 100  # Calculate progress percentage
-        sys.stdout.write(f"\rProgress: {random plane progress:.2f}%")  # Overwrite the progress line
+        sys.stdout.write(f"\rRandom-plane Progress: {progress:.0f}%")  # Overwrite the progress line
         sys.stdout.flush()  # Ensure the progress line gets updated immediately
 
         even_row = row % 2 == 0
@@ -161,6 +161,8 @@ def create_random_hexagonal_tiled_surface(
             #                    pygame.font.get_default_font(), 48, (0, 255, 128),
             #                    x, y)
 
+    sys.stdout.write(f"\rRandom-plane Done.")  # Overwrite the progress line
+    sys.stdout.flush()
     return canvas
 
 
@@ -215,7 +217,4 @@ if __name__ == "__main__":
         pygame.image.save(canvas, "output.png")
 
 
-    # main()
-
-    # yellow -> cyan plane
-    # graded_colour_plane(colour1=pygame.Color(255,255,0,255), tile_scale=0.5)
+    main()
