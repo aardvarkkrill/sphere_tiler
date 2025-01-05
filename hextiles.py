@@ -8,6 +8,8 @@ import sys
 
 from pygame.math import clamp
 
+import rainbow_tile
+
 
 # Take a hexagonal tile and repeat it over the plane, with random orientation.
 # Argument: name of tile file (default tile.png)
@@ -65,7 +67,8 @@ def draw_centered_text(surface, text, font_path, font_size, color, x, y):
 # randomised rotations of a tile
 def create_random_hexagonal_tiled_surface(
         tile_path, canvas_size=(6400, 6400), tile_scale=1.0,
-        background_colour: Optional[pygame.Color] = pygame.Color(255, 255, 255, 255)
+        background_colour: Optional[pygame.Color] = pygame.Color(255, 255, 255,
+                                                                 255)
 ) -> pygame.Surface:
     # Create canvas
     canvas = pygame.Surface(canvas_size, flags=pygame.SRCALPHA)
@@ -78,7 +81,17 @@ def create_random_hexagonal_tiled_surface(
     # canvas.fill((255,255,255))  # Fill with white
 
     # Load image
-    full_tile = pygame.image.load(tile_path)
+    full_tile = pygame.image.load(tile_path) if isinstance(tile_path, str) \
+        else tile_path
+
+    # a callable tile takes two [0,1] arguments (x and y fractions along the
+    # plane.  In this case we'll get one tile just to measure it.
+    if callable(full_tile):
+        callable_full_tile = full_tile
+        full_tile = callable_full_tile(0.0, 0.0)
+    else:
+        callable_full_tile = None
+
     scaled_tile = pygame.transform.smoothscale_by(full_tile, tile_scale)
 
     tile_height = scaled_tile.get_height()
@@ -96,10 +109,22 @@ def create_random_hexagonal_tiled_surface(
 
     # Place random copies with random rotations
     for row in range(num_tiles_y):
+
+        progress = (row + 1) / num_tiles_y * 100  # Calculate progress percentage
+        sys.stdout.write(f"\rProgress: {random plane progress:.2f}%")  # Overwrite the progress line
+        sys.stdout.flush()  # Ensure the progress line gets updated immediately
+
         even_row = row % 2 == 0
         for col in range((0 if even_row else 1), num_tiles_x, 2):
             x = col * tile_radius * 3 / 2
             y = row * tile_height / 2
+
+            if callable_full_tile is not None:
+                scaled_tile = callable_full_tile(
+                    clamp(x / canvas_size[0], 0, 1),
+                    clamp(y / canvas_size[1], 0, 1))
+                scaled_tile = pygame.transform.smoothscale_by(scaled_tile,
+                                                              tile_scale)
 
             # this is for the tile with the isolated dot
             has_isolated_dot = False
@@ -139,10 +164,58 @@ def create_random_hexagonal_tiled_surface(
     return canvas
 
 
+def graded_colour_plane(
+        colour1=pygame.Color(255, 0, 255, 255),  # pink
+        colour2=pygame.Color(0, 255, 255, 255),  # cyan,
+        canvas_size=(6400, 6400),  # default canvas size
+        tile_scale=1.0
+) -> pygame.Surface:
+    """
+    Generates a gradient-based hexagonal tiled image surface by blending two colors.
+    The function creates a hexagonal tiled surface where tiles are painted with colors
+    blended between `colour1` and `colour2`. The blending is determined by the distance
+    of each tile and relative to a center. The resulting surface is saved as an image
+    file named "output.png" and returned.
+
+    Parameters:
+        colour1 (pygame.Color): The starting color for the gradient, defaults
+                                to pink pygame.Color(255, 0, 255, 255).
+        colour2 (pygame.Color): The ending color for the gradient, defaults
+                                to cyan pygame.Color(0, 255, 255, 255).
+        tile_scale (float): A scaling factor for the size of the hexagonal tiles.
+                            Higher values increase the tile size, defaults to 1.0.
+
+    Returns:
+        pygame.Surface: The generated hexagonal tiled surface with a gradient
+                        based on the provided colors.
+    """
+
+    def tile(x, y) -> pygame.Surface:
+        # colour1 in top left -> colour2 in bottom right
+        d00 = abs(x) + abs(y)
+        return rainbow_tile.pink_tile(
+            rainbow_tile.blend_colours(colour1, colour2, d00 / 2))
+
+    canvas = create_random_hexagonal_tiled_surface(tile,
+                                                   background_colour=pygame.Color(0, 0, 0, 0),
+                                                   canvas_size=canvas_size,
+                                                   tile_scale=tile_scale)
+    pygame.image.save(canvas, "output.png")
+    return canvas
+
+
 # Usage example
 if __name__ == "__main__":
-    tile = "tile.png" if len(sys.argv) <= 1 else sys.argv[1]
-    tile_scale = 1.0 if len(sys.argv) <= 2 else float(sys.argv[2])
-    canvas = create_random_hexagonal_tiled_surface(tile, tile_scale=tile_scale)
-    # Save canvas as image
-    pygame.image.save(canvas, "output.png")
+    def main():
+        tile = "tile.png" if len(sys.argv) <= 1 else sys.argv[1]
+        tile_scale = 1.0 if len(sys.argv) <= 2 else float(sys.argv[2])
+        canvas = create_random_hexagonal_tiled_surface(tile,
+                                                       tile_scale=tile_scale)
+        # Save canvas as image
+        pygame.image.save(canvas, "output.png")
+
+
+    # main()
+
+    # yellow -> cyan plane
+    # graded_colour_plane(colour1=pygame.Color(255,255,0,255), tile_scale=0.5)
