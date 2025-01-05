@@ -103,36 +103,60 @@ def rainbow_arc(surface: pygame.Surface, polygon: Polygon,
             radius = (point_a - centre).length()
             arc(surface, centre, radius, theta_b, theta_a, colour, 3)
 
+def rainbow_tile() -> pygame.Surface:
+    """ creates the rainbow tile"""
+    pygame.init()
+    height = 800
+    tile, side, points = create_canvas(height=height)
+
+    polygon = Polygon(points, height, side)
+
+    # for p in points:
+    #     pygame.draw.circle(tile, pygame.color.THECOLORS["black"], p, 5)
+    # show_canvas.show_canvas(tile)
+
+    def rainbow(fraction: float) -> pygame.Color:
+        c = pygame.Color(0)
+        c.hsva = (
+            fraction * 360, 100, 100,
+            100)  # HSV: hue, saturation, value, alpha
+        return c
+
+    rainbow_arc(tile, polygon, 1, 2, rainbow)
+    rainbow_arc(tile, polygon, 4, 5, rainbow)
+    rainbow_arc(tile, polygon, 0, 3, rainbow)
+    return tile
+
+def pink_tile() -> pygame.Surface:
+    """ creates the pink tile and saves it to xxx"""
+    pygame.init()
+    height = 800
+    tile, side, points = create_canvas(height=height)
+
+    polygon = Polygon(points, height, side)
+
+    # for p in points:
+    #     pygame.draw.circle(tile, pygame.color.THECOLORS["black"], p, 5)
+    # show_canvas.show_canvas(tile)
+
+    def rainbow(fraction: float) -> pygame.Color:
+        c = pygame.Color(0)
+        c.hsva = (
+            fraction * 360, 100, 100,
+            100)  # HSV: hue, saturation, value, alpha
+        return c
+
+    rainbow_arc(tile, polygon, 1, 2, rainbow)
+    rainbow_arc(tile, polygon, 4, 5, rainbow)
+    rainbow_arc(tile, polygon, 0, 3, rainbow)
+
+    show_canvas.show_canvas(tile)
+    pygame.image.save(tile, "rainbow_tile.png")
+
+    return tile
+
 
 if __name__ == "__main__":
-    # create a tile with rainbow curves
-
-    def main() -> None:
-        pygame.init()
-        height = 800
-        tile, side, points = create_canvas(height=height)
-
-        polygon = Polygon(points, height, side)
-
-        # for p in points:
-        #     pygame.draw.circle(tile, pygame.color.THECOLORS["black"], p, 5)
-        # show_canvas.show_canvas(tile)
-
-        def rainbow(fraction: float) -> pygame.Color:
-            c = pygame.Color(0)
-            c.hsva = (
-                fraction * 360, 100, 100,
-                100)  # HSV: hue, saturation, value, alpha
-            return c
-
-        rainbow_arc(tile, polygon, 1, 2, rainbow)
-        rainbow_arc(tile, polygon, 4, 5, rainbow)
-        rainbow_arc(tile, polygon, 0, 3, rainbow)
-
-        show_canvas.show_canvas(tile)
-        pygame.image.save(tile, "rainbow_tile.png")
-
-        pygame.quit()
-
-
-    main()
+    tile = rainbow_tile()
+    pygame.image.save(tile, "rainbow_tile.png")
+    show_canvas.show_canvas(tile)

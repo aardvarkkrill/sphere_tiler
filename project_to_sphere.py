@@ -114,7 +114,6 @@ if __name__ == "__main__":
         p = project_image_to_sphere(surface=None, plane=plane,
                                     radius=radius, shadow_amount=shade)
         pygame.image.save(p, "sphere.png")
-        pygame.quit()
 
 
     main()

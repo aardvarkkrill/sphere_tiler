@@ -52,7 +52,6 @@ def create_canvas_and_save_output1(tile_path: str, output_path: str,
 
     # Save canvas as image
     pygame.image.save(canvas, output_path)
-    pygame.quit()
 
 
 # Draw centered text at specified coordinates
