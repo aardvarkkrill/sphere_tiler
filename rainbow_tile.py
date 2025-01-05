@@ -159,10 +159,35 @@ def rainbow_tile(extent: float = 0.6) -> pygame.Surface:
 def blend_colours(a: pygame.Color, b: pygame.Color,
                   alpha: float) -> pygame.Color:
     def blend(c1, c2): return round(c1 * (1 - alpha) + c2 * alpha)
+
     return pygame.Color(blend(a.r, b.r),
                         blend(a.g, b.g),
                         blend(a.b, b.b),
                         blend(a.a, b.a))
+
+
+# Blends two colours (or colour functions, or meta-colour-functions),
+# returning a meta-colour-function that blends more of the first colour
+# around a certain part of each arc when passed to rainbow_arc
+# (used eg for drawing shadows.)
+# Note: peak and spread are analogous to mean and variance of a gaussian.
+def blend_colours_dynamic(colour1: MetaColourFunction,
+                          colour2: MetaColourFunction,
+                          peak: float, spread: float) -> MetaColourFunction:
+    def f(edge_fraction: float) -> ColourFunction:
+        c1 = colour1(edge_fraction) if callable(colour1) else colour1
+        c2 = colour2(edge_fraction) if callable(colour2) else colour2
+
+        def g(arc_fraction: float) -> pygame.Color:
+            cc1 = c1(arc_fraction) if callable(c1) else c1
+            cc2 = c2(arc_fraction) if callable(c2) else c2
+            amount = math.exp((- (arc_fraction - peak) ** 2) / spread) * 16 * (
+                    arc_fraction * (1 - arc_fraction)) ** 2
+            return blend_colours(cc1, cc2, amount)
+
+        return g
+
+    return f
 
 
 def pink_tile() -> pygame.Surface:
@@ -180,14 +205,8 @@ def pink_tile() -> pygame.Surface:
     # show_canvas.show_canvas(tile)
 
     pink = pygame.Color(255, 0, 255, 255)
-
-    def pink_shade(fraction: float) -> ColourFunction:
-        def f(arc_fraction: float) -> pygame.Color:
-            amount = math.exp(- (arc_fraction - 0.35) ** 2)
-            return blend_colours(pygame.Color(255, 0, 255, 255),
-                                 pygame.Color(0, 0, 0, 255),
-                                 amount)
-        return f
+    black = pygame.Color(0, 0, 0, 255)
+    pink_shade = blend_colours_dynamic(pink, black, peak=0.35, spread=0.1)
 
     rainbow_arc(tile, polygon, 0, 2, pink_shade, extent=0.3)
     rainbow_arc(tile, polygon, 1, 3, pink, extent=0.3)
@@ -206,7 +225,7 @@ if __name__ == "__main__":
             pygame.image.save(tile, "rainbow_tile.png")
         elif tile_name == "pink":
             tile = pink_tile()
-            pygame.image.save(tile, "pink_tile_tmp.png")
+            pygame.image.save(tile, "pink_tile.png")
         else:
             print(f"""I don't know how to make tile \"{tile_name}\"\n
                       Known tiles: rainbow, pink.""", file=sys.stderr)
