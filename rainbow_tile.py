@@ -145,7 +145,9 @@ def rainbow_tile(extent: float = 0.6) -> pygame.Surface:
 
 
 def pink_tile() -> pygame.Surface:
-    """ creates the pink tile and saves it to xxx"""
+    """ creates the pink tile
+        TODO: add the crossover shading
+    """
     pygame.init()
     height = 800
     tile, side, points = create_canvas(height=height)
@@ -156,25 +158,29 @@ def pink_tile() -> pygame.Surface:
     #     pygame.draw.circle(tile, pygame.color.THECOLORS["black"], p, 5)
     # show_canvas.show_canvas(tile)
 
-    def rainbow(fraction: float) -> pygame.Color:
-        c = pygame.Color(0)
-        c.hsva = (
-            fraction * 360, 100, 100,
-            100)  # HSV: hue, saturation, value, alpha
-        return c
+    def pink(fraction: float) -> pygame.Color:
+        return pygame.Color(255, 0, 255, 255)
 
-    rainbow_arc(tile, polygon, 1, 2, rainbow)
-    rainbow_arc(tile, polygon, 4, 5, rainbow)
-    rainbow_arc(tile, polygon, 0, 3, rainbow)
-
-    show_canvas.show_canvas(tile)
-    pygame.image.save(tile, "rainbow_tile.png")
+    rainbow_arc(tile, polygon, 0, 2, pink, extent=0.3)
+    rainbow_arc(tile, polygon, 1, 3, pink, extent=0.3)
+    rainbow_arc(tile, polygon, 4, 5, pink, extent=0.3)
 
     return tile
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 1 or sys.argv[1] == "rainbow":
+
+    tile_name = sys.argv[1] if len(sys.argv) > 1 else "pink"
+
+    if tile_name == "rainbow":
         tile = rainbow_tile()
-    pygame.image.save(tile, "rainbow_tile.png")
+        pygame.image.save(tile, "rainbow_tile.png")
+    elif tile_name == "pink":
+        tile = pink_tile()
+        pygame.image.save(tile, "pink_tile_tmp.png")
+    else:
+        print(f"""I don't know how to make tile \"{tile_name}\"\n
+                  Known tiles: rainbow, pink.""", file=sys.stderr)
+        exit(1)
+
     show_canvas.show_canvas(tile)
