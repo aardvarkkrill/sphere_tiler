@@ -64,12 +64,35 @@ def draw_centered_text(surface, text, font_path, font_size, color, x, y):
     surface.blit(rendered_text, text_rect)
 
 
-# randomised rotations of a tile
 def create_random_hexagonal_tiled_surface(
         tile_path, canvas_size=(6400, 6400), tile_scale=1.0,
-        background_colour: Optional[pygame.Color] = pygame.Color(255, 255, 255,
-                                                                 255)
+        background_colour: Optional[pygame.Color]
+        = pygame.Color(255, 255, 255, 255)
 ) -> pygame.Surface:
+    """
+    Generates a hexagonal tiled surface using a provided image or callable tile
+    generator, or a list of these.  Chooses a random rotation and reflection for
+    each tile position of (one of the) input tile(s).
+
+    Parameters:
+        tile_path (Union[str, Callable[[float, float], pygame.Surface], list]):
+            The filepath to the tile image or a callable function that returns a tile 
+            surface based on x and y fractional coordinates, or a non-empty list
+            of these.
+            If there's more than one tile, they must all evaluate to the same
+            size, and if callable, also the same size for any parameter set.
+        canvas_size (Tuple[int, int]): 
+            The dimensions of the canvas to generate, defaults to (6400, 6400).
+        tile_scale (float): 
+            A scaling factor for resizing the tiles, defaults to 1.0.
+        background_colour (Optional[pygame.Color]): 
+            The background color to fill the canvas, defaults to white 
+            (pygame.Color(255, 255, 255, 255)).
+
+    Returns:
+        pygame.Surface: 
+            A pygame surface containing the hexagonal tiled pattern.
+    """
     # Create canvas
     canvas = pygame.Surface(canvas_size, flags=pygame.SRCALPHA)
 
@@ -80,21 +103,28 @@ def create_random_hexagonal_tiled_surface(
     # canvas.fill((179, 179, 179))  # Fill with grey 30% (0xB3)
     # canvas.fill((255,255,255))  # Fill with white
 
-    # Load image
-    full_tile = pygame.image.load(tile_path) if isinstance(tile_path, str) \
-        else tile_path
+    if not isinstance(tile_path, list):
+        tile_path = [tile_path]
+
+    # Load image(s) if files
+    full_tiles = [
+        pygame.image.load(tile_path) if isinstance(tile_path, str) \
+            else tile_path
+        for tp in tile_path
+    ]
 
     # a callable tile takes two [0,1] arguments (x and y fractions along the
     # plane.  In this case we'll get one tile just to measure it.
-    if callable(full_tile):
-        callable_full_tile = full_tile
-        full_tile = callable_full_tile(0.0, 0.0)
+    if callable(full_tiles[0]):
+        callable_full_tile = full_tiles[0]
+        full_tile0 = callable_full_tile(0.0, 0.0)
     else:
+        full_tile0 = full_tiles[0]
         callable_full_tile = None
 
-    scaled_tile = pygame.transform.smoothscale_by(full_tile, tile_scale)
+    scaled_tile0 = pygame.transform.smoothscale_by(full_tile0, tile_scale)
 
-    tile_height = scaled_tile.get_height()
+    tile_height = scaled_tile0.get_height()
     tile_radius = tile_height / math.sqrt(3)
     tile_diameter = tile_height * 2 / math.sqrt(3)
 
@@ -110,8 +140,10 @@ def create_random_hexagonal_tiled_surface(
     # Place random copies with random rotations
     for row in range(num_tiles_y):
 
-        progress = (row + 1) / num_tiles_y * 100  # Calculate progress percentage
-        sys.stdout.write(f"\rRandom-plane Progress: {progress:.0f}%")  # Overwrite the progress line
+        progress = (
+                           row + 1) / num_tiles_y * 100  # Calculate progress percentage
+        sys.stdout.write(
+            f"\rRandom-plane Progress: {progress:.0f}%")  # Overwrite the progress line
         sys.stdout.flush()  # Ensure the progress line gets updated immediately
 
         even_row = row % 2 == 0
@@ -199,7 +231,8 @@ def graded_colour_plane(
             rainbow_tile.blend_colours(colour1, colour2, d00 / 2))
 
     canvas = create_random_hexagonal_tiled_surface(tile,
-                                                   background_colour=pygame.Color(0, 0, 0, 0),
+                                                   background_colour=pygame.Color(
+                                                       0, 0, 0, 0),
                                                    canvas_size=canvas_size,
                                                    tile_scale=tile_scale)
     pygame.image.save(canvas, "output.png")
