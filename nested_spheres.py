@@ -7,6 +7,7 @@ import pygame
 import hextiles
 import project_to_sphere
 import brain_tile
+import rainbow_tile
 import show_canvas
 
 
@@ -29,15 +30,24 @@ def main():
     #     )
     #     pygame.image.save(rainbow_plane, "rainbow_plane.png")
 
-    if os.path.exists("pink_plane.png"):
-        pink_plane = pygame.image.load("pink_plane.png")
+    # create pink_tile.png if it doesn't already exist
+    if not os.path.exists("pink_tile.png"):
+        tile = rainbow_tile.pink_tile()
+        pygame.image.save(tile, "pink_tile.png")
+        os.remove("pink_plane.png")
 
-    else:
+    # create pink_plane.png if it doesn't already exist, or is older than
+    # the pink_tile.pnk
+    if (not os.path.exists("pink_plane.png") or
+            os.path.getmtime("pink_plane.png") <
+            os.path.getmtime("pink_tile.png")):
         pink_plane = hextiles.create_random_hexagonal_tiled_surface(
             "pink_tile.png", (6400, 6400), 1.0,
             pygame.Color(0, 0, 0, 0)
         )
         pygame.image.save(pink_plane, "pink_plane.png")
+    else:
+        pink_plane = pygame.image.load("pink_plane.png")
 
     radius = 1200
     sphere_surface = pygame.Surface((2 * radius, 2 * radius),
@@ -45,12 +55,6 @@ def main():
     sphere_surface.fill(pygame.Color(255, 255, 255, 255))
     pygame.draw.circle(sphere_surface, pygame.Color(50, 50, 50, 255),
                        center=(radius, radius), radius=radius, width=0)
-
-    # sphere_surface = project_to_sphere.project_image_to_sphere(
-    #     sphere_surface, brain_plane, round(radius * 0.9**2), 0.7)
-    #
-    # sphere_surface = project_to_sphere.project_image_to_sphere(
-    #     sphere_surface, rainbow_plane, round(radius * 0.9**1), 0.5)
 
     # assume we need 4*radius pixels of the plane for each projection, choose
     # a random point in the surface to centre the sphere
@@ -62,20 +66,22 @@ def main():
 
     # how much smaller is the radius of each nested layer than its parent
     shrink = 0.9
+    num_layers = 4
+    base_shadow = 0.3
+    shadow_factor = 1.5
+
+    for i in range(num_layers-1, 0, -1):
+        sphere_surface = project_to_sphere.project_image_to_sphere(
+            sphere_surface, pink_plane, round(radius * shrink ** i),
+            base_shadow * shadow_factor**i,
+            sphere_centre_xy=random_point(pink_plane),
+            sphere_centre_z=radius * shrink ** i)
 
     sphere_surface = project_to_sphere.project_image_to_sphere(
-        sphere_surface, pink_plane, round(radius * shrink ** 3), 0.9,
-        sphere_centre_xy=random_point(pink_plane), sphere_centre_z=radius * shrink ** 3)
-    sphere_surface = project_to_sphere.project_image_to_sphere(
-        sphere_surface, pink_plane, round(radius * shrink ** 2), 0.7,
-        sphere_centre_xy=random_point(pink_plane), sphere_centre_z=radius * shrink ** 2)
-    sphere_surface = project_to_sphere.project_image_to_sphere(
-        sphere_surface, pink_plane, round(radius * shrink ** 1), 0.5,
-        sphere_centre_xy=random_point(pink_plane), sphere_centre_z=radius * shrink ** 1)
-    sphere_surface = project_to_sphere.project_image_to_sphere(
-        sphere_surface, pink_plane, round(radius * shrink ** 0), 0.3)
+        sphere_surface, pink_plane, round(radius * shrink ** 0), base_shadow)
 
     pygame.image.save(sphere_surface, "nested_spheres.png")
     show_canvas.show_canvas(sphere_surface, (600, 600))
+
 
 main()
