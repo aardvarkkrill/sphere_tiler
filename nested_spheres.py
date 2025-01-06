@@ -133,12 +133,15 @@ def rainbow_sphere():
 
 def experimental_sphere():
     # # create pink_tile.png if it doesn't already exist
-    base_name = "pink_dotted"
+    base_name = "pink_and_green"
 
-    tile_names = [f"{base_name}_tile.png", f"rainbow_tile.png"]
+    tiles = [f"pink_dotted_tile.png",
+             rainbow_tile.pink_tile(pygame.Color("green")),
+             rainbow_tile.pink_tile(pygame.Color("yellow")),
+             rainbow_tile.pink_tile(pygame.Color("blue"))]
     plane = hextiles.create_random_hexagonal_tiled_surface(
-        tile_names, (6400, 6400), 0.25,
-        pygame.Color(0, 0, 0, 0)
+        tiles, (6400, 6400), 0.25,
+        pygame.Color(255, 255, 255, 255)
     )
     pygame.image.save(plane, f"{base_name}_plane.png")
     show_canvas.show_canvas(plane, (600, 600))
