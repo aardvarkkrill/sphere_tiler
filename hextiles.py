@@ -150,8 +150,7 @@ def create_random_hexagonal_tiled_surface(
     # Place random copies with random rotations
     for row in range(num_tiles_y):
 
-        progress = 100 - (
-                    row + 1) / num_tiles_y * 100  # Calculate progress percentage
+        progress = (row + 1) / num_tiles_y * 100  # Calculate progress percentage
         sys.stdout.write(
             f"\rRandom-plane Progress: {progress:.0f}%")  # Overwrite the progress line
         sys.stdout.flush()  # Ensure the progress line gets updated immediately

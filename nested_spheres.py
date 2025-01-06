@@ -131,22 +131,34 @@ def rainbow_sphere():
     show_canvas.show_canvas(sphere, (600, 600))
 
 
-def experimental_sphere():
-    # # create pink_tile.png if it doesn't already exist
-    base_name = "pink_and_green"
+def twig_tile():
+    tile = rainbow_tile.pink_tile(pygame.Color(107, 65, 44, 255),
+                                  extent=0.08, shade_overlap=False)
+    show_canvas.show_canvas(tile)
+    pygame.image.save(tile, "twigs.png")
 
-    tiles = [f"pink_dotted_tile.png",
-             rainbow_tile.pink_tile(pygame.Color("green")),
-             rainbow_tile.pink_tile(pygame.Color("yellow")),
-             rainbow_tile.pink_tile(pygame.Color("blue"))]
-    plane = hextiles.create_random_hexagonal_tiled_surface(
-        tiles, (6400, 6400), 0.25,
-        pygame.Color(255, 255, 255, 255)
-    )
-    pygame.image.save(plane, f"{base_name}_plane.png")
-    show_canvas.show_canvas(plane, (600, 600))
 
-    # plane_name = f"{base_name}_plane.png"
+def leafy_sphere():
+    base_name = "leafy"
+    plane_name = f"{base_name}_plane.png"
+    sphere_name = f"{base_name}_sphere.png"
+
+    if os.path.exists(plane_name):
+        plane = pygame.image.load(plane_name)
+    else:
+        tiles = f"leafy_tile.png"
+        plane = hextiles.create_random_hexagonal_tiled_surface(
+            tiles, (6400, 6400), 0.25,
+            pygame.Color(0, 0, 0, 0)
+        )
+        pygame.image.save(plane, plane_name)
+        # show_canvas.show_canvas(plane, (600, 600))
+
+    sphere = make_nest(plane,
+                       behind_sphere=pygame.Color("black"))
+    pygame.image.save(sphere, sphere_name)
+    show_canvas.show_canvas(sphere, (600, 600))
+
     # sphere_name = f"{base_name}_sphere.png"
     # if not os.path.exists(tile_name):
     #     sys.exit(-1)
@@ -171,4 +183,5 @@ def experimental_sphere():
 # yellow_cyan_sphere()
 # brain_sphere()
 # rainbow_sphere()
-experimental_sphere()
+# twig_tile()
+leafy_sphere()

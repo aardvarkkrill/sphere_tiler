@@ -190,9 +190,12 @@ def blend_colours_dynamic(colour1: MetaColourFunction,
     return f
 
 
-def pink_tile(base_colour : pygame.Color
-              = pygame.Color(255, 0, 255, 255)) -> pygame.Surface:
-    """ builds the pink hexagonal tile (or, base it on any other colour) """
+def pink_tile(base_colour : pygame.Color = pygame.Color(255, 0, 255, 255),
+              extent: float = 0.3,
+              shade_overlap: bool = True) -> pygame.Surface:
+    """ builds the pink hexagonal tile (or, base it on any other colour)
+        "Extent" determines the thickness of the branches
+    """
     pygame.init()
     height = 800
     tile, side, points = create_canvas(height=height)
@@ -200,12 +203,15 @@ def pink_tile(base_colour : pygame.Color
     polygon = Polygon(points, height, side)
 
     pink = base_colour
-    black = pygame.Color(0, 0, 0, 255)
-    pink_shade = blend_colours_dynamic(pink, black, peak=0.35, spread=0.1)
+    if shade_overlap:
+        black = pygame.Color(0, 0, 0, 255)
+        pink_shade = blend_colours_dynamic(pink, black, peak=0.35, spread=extent/3)
+    else:
+        pink_shade = pink
 
-    rainbow_arc(tile, polygon, 0, 2, pink_shade, extent=0.3)
-    rainbow_arc(tile, polygon, 1, 3, pink, extent=0.3)
-    rainbow_arc(tile, polygon, 4, 5, pink, extent=0.3)
+    rainbow_arc(tile, polygon, 0, 2, pink_shade, extent=extent)
+    rainbow_arc(tile, polygon, 1, 3, pink, extent=extent)
+    rainbow_arc(tile, polygon, 4, 5, pink, extent=extent)
 
     return tile
 

@@ -40,7 +40,7 @@ def project_image_to_sphere(
     # looping over projected image
     num_tiles_y = int(ceiling(2 * radius))
     for y in range(num_tiles_y, 0, -1):
-        progress = (y+1) / num_tiles_y * 100  # Calculate progress percentage
+        progress = 100 - (y+1) / num_tiles_y * 100  # Calculate progress percentage
         sys.stdout.write(f"\rSphere wrapping Progress: {progress:.0f}%")  # Overwrite the progress line
         sys.stdout.flush()  # Ensure the progress line gets updated immediately
 
