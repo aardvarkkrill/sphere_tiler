@@ -116,21 +116,36 @@ def create_random_hexagonal_tiled_surface(
     # a callable tile takes two [0,1] arguments (x and y fractions along the
     # plane.  In this case we'll get one tile just to measure it.
     if callable(full_tiles[0]):
-        callable_full_tile = full_tiles[0]
-        full_tile0 = callable_full_tile(0.0, 0.0)
+        full_tile0 = full_tiles[0](0.0, 0.0)
+    elif isinstance(full_tiles[0], str):
+        full_tile0 = pygame.image.load(full_tiles[0])
     else:
         full_tile0 = full_tiles[0]
-        callable_full_tile = None
 
     scaled_tile0 = pygame.transform.smoothscale_by(full_tile0, tile_scale)
 
     tile_height = scaled_tile0.get_height()
     tile_radius = tile_height / math.sqrt(3)
     tile_diameter = tile_height * 2 / math.sqrt(3)
-
     num_tiles_x = 1 + math.ceil(canvas_size[0] * 2 / (3 * tile_radius))
     num_tiles_y = 1 + math.ceil(canvas_size[1] * 2 / tile_height)
 
+    # Build a list of either scaled tiles (so we only have to scale them once)
+    # or else just the callable
+    scaled_tiles = []
+    for full_tile in full_tiles:
+        if callable(full_tile):
+            scaled_tiles.append(full_tile)
+        else:
+            if isinstance(full_tile, str):
+                full_tile = pygame.image.load(full_tile)
+            scaled_tiles.append(
+                pygame.transform.smoothscale_by(full_tile, tile_scale))
+
+    # an array to hold the decisions on tile selection and rotation (negative
+    # for reflections)
+    selections = numpy.zeros((num_tiles_y, num_tiles_x * 2), dtype=numpy.int32)
+    selections[:] = numpy.iinfo(numpy.int32).min
     rotations = numpy.zeros((num_tiles_y, num_tiles_x * 2), dtype=numpy.int32)
     rotations[:] = numpy.iinfo(numpy.int32).min
 
@@ -140,8 +155,8 @@ def create_random_hexagonal_tiled_surface(
     # Place random copies with random rotations
     for row in range(num_tiles_y):
 
-        progress = (
-                           row + 1) / num_tiles_y * 100  # Calculate progress percentage
+        progress = 100 - (
+                    row + 1) / num_tiles_y * 100  # Calculate progress percentage
         sys.stdout.write(
             f"\rRandom-plane Progress: {progress:.0f}%")  # Overwrite the progress line
         sys.stdout.flush()  # Ensure the progress line gets updated immediately
@@ -151,30 +166,19 @@ def create_random_hexagonal_tiled_surface(
             x = col * tile_radius * 3 / 2
             y = row * tile_height / 2
 
-            if callable_full_tile is not None:
-                scaled_tile = callable_full_tile(
+            select = random.randint(0, len(scaled_tiles) - 1)
+            selections[row, col] = select
+            scaled_tile = scaled_tiles[select]
+
+            if callable(scaled_tile):
+                full_tile = scaled_tile(
                     clamp(x / canvas_size[0], 0, 1),
                     clamp(y / canvas_size[1], 0, 1))
-                scaled_tile = pygame.transform.smoothscale_by(scaled_tile,
+                scaled_tile = pygame.transform.smoothscale_by(full_tile,
                                                               tile_scale)
 
-            # this is for the tile with the isolated dot
-            has_isolated_dot = False
-            if has_isolated_dot:
-                allowed_rotations = [0, 1, 2, 3, 4, 5]
-                allow_reflections = False
-                if row > 0 and col > 0 and rotations[row - 1, col - 1] == 3:
-                    allowed_rotations.remove(0)
-                if row > 0 and col < num_tiles_x * 2 - 1 and rotations[
-                    row - 1, col + 1] == 1:
-                    allowed_rotations.remove(4)
-                if row > 1 and rotations[row - 2, col] == 2:
-                    allowed_rotations.remove(5)
-            else:
-                allowed_rotations = list(range(-5, 6))
-
             # Random rotation
-            choice = random.choice(allowed_rotations)
+            choice = random.choice(range(-6, 6))
             rotations[row, col] = choice
 
             if choice < 0:
