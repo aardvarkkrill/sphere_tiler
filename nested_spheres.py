@@ -11,10 +11,10 @@ import rainbow_tile
 import show_canvas
 
 
-def make_nest(plane, # plane to be wrapped on each shell
-              radius = 1200, # radius of the outermost shell
-              num_layers=4, # there are this many layers of spherical shell
-              shrink=0.9, # each layer is this much smaller
+def make_nest(plane,  # plane to be wrapped on each shell
+              radius=1200,  # radius of the outermost shell
+              num_layers=4,  # there are this many layers of spherical shell
+              shrink=0.9,  # each layer is this much smaller
               base_shadow=0.3,  # outer layer has this much shade
               shadow_factor=1.5,  # each shadow darkens by this amount
               paper_colour=pygame.Color(255, 255, 255, 255),
@@ -73,11 +73,13 @@ def pink_sphere():
     pygame.image.save(sphere, "pink_sphere.png")
     show_canvas.show_canvas(sphere, (600, 600))
 
+
 def yellow_cyan_sphere():
     # yellow -> cyan plane
     if not os.path.exists("yellow-cyan_plane.png"):
-        plane = hextiles.graded_colour_plane(colour1=pygame.Color(255, 255, 0, 255),
-                                 tile_scale=0.25)
+        plane = hextiles.graded_colour_plane(
+            colour1=pygame.Color(255, 255, 0, 255),
+            tile_scale=0.25)
         pygame.image.save(plane, "yellow-cyan_plane.png")
     plane = pygame.image.load("yellow-cyan_plane.png")
 
@@ -85,8 +87,8 @@ def yellow_cyan_sphere():
     pygame.image.save(sphere, "yellow_cyan_spheres.png")
     show_canvas.show_canvas(sphere, (600, 600))
 
-def brain_sphere():
 
+def brain_sphere():
     # create brain_tile.png if it doesn't already exist
     if not os.path.exists("brain_tile.png"):
         tile = brain_tile.brain_tile()
@@ -94,7 +96,7 @@ def brain_sphere():
         os.remove("brain_plane.png")
 
     if os.path.exists("brain_plane.png"):
-          plane = pygame.image.load("brain_plane.png")
+        plane = pygame.image.load("brain_plane.png")
     else:
         plane = hextiles.create_random_hexagonal_tiled_surface(
             "brain_tile.png", (6400, 6400), 1.0,
@@ -103,14 +105,13 @@ def brain_sphere():
         pygame.image.save(plane, "brain_plane.png")
 
     sphere = make_nest(plane,
-                       shrink=0.8, num_layers= 6,
+                       shrink=0.8, num_layers=6,
                        behind_sphere=pygame.Color(127, 127, 127, 255))
     pygame.image.save(sphere, "brain_spheres.png")
     show_canvas.show_canvas(sphere, (600, 600))
 
 
 def rainbow_sphere():
-
     if not os.path.exists("rainbow_tile.png"):
         tile = rainbow_tile.rainbow_tile()
         pygame.image.save(tile, "rainbow_tile.png")
@@ -121,7 +122,7 @@ def rainbow_sphere():
     else:
         plane = hextiles.create_random_hexagonal_tiled_surface(
             "rainbow_tile.png", (6400, 6400), 0.5,
-                            background_colour=pygame.Color(0, 0, 0, 0)
+            background_colour=pygame.Color(0, 0, 0, 0)
         )
         pygame.image.save(plane, "rainbow_plane.png")
 
@@ -131,28 +132,37 @@ def rainbow_sphere():
 
 
 def experimental_sphere():
-    # create pink_tile.png if it doesn't already exist
+    # # create pink_tile.png if it doesn't already exist
     base_name = "pink_dotted"
-    tile_name = f"{base_name}_tile.png"
-    plane_name = f"{base_name}_plane.png"
-    sphere_name = f"{base_name}_sphere.png"
-    if not os.path.exists(tile_name):
-        sys.exit(-1)
 
-    # create plane if it doesn't already exist, or is older than its tile
-    if not os.path.exists(plane_name) or \
-            os.path.getmtime(plane_name) < os.path.getmtime(tile_name):
-        plane = hextiles.create_random_hexagonal_tiled_surface(
-            tile_name, (6400, 6400), 0.25,
-            pygame.Color(0, 0, 0, 0)
-        )
-        pygame.image.save(plane, plane_name)
-    else: # otherwise just load it
-        pink_plane = pygame.image.load(plane_name)
+    tile_names = [f"{base_name}_tile.png", f"rainbow_tile.png"]
+    plane = hextiles.create_random_hexagonal_tiled_surface(
+        tile_names, (6400, 6400), 0.25,
+        pygame.Color(0, 0, 0, 0)
+    )
+    pygame.image.save(plane, f"{base_name}_plane.png")
+    show_canvas.show_canvas(plane, (600, 600))
 
-    sphere = make_nest(plane)
-    pygame.image.save(sphere, sphere_name)
-    show_canvas.show_canvas(sphere, (600, 600))
+    # plane_name = f"{base_name}_plane.png"
+    # sphere_name = f"{base_name}_sphere.png"
+    # if not os.path.exists(tile_name):
+    #     sys.exit(-1)
+    #
+    # # create plane if it doesn't already exist, or is older than its tile
+    # if not os.path.exists(plane_name) or \
+    #         os.path.getmtime(plane_name) < os.path.getmtime(tile_name):
+    #     plane = hextiles.create_random_hexagonal_tiled_surface(
+    #         tile_name, (6400, 6400), 0.25,
+    #         pygame.Color(0, 0, 0, 0)
+    #     )
+    #     pygame.image.save(plane, plane_name)
+    # else: # otherwise just load it
+    #     pink_plane = pygame.image.load(plane_name)
+    #
+    # sphere = make_nest(plane)
+    # pygame.image.save(sphere, sphere_name)
+    # show_canvas.show_canvas(sphere, (600, 600))
+
 
 # pink_sphere()
 # yellow_cyan_sphere()

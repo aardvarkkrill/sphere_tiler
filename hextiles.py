@@ -65,7 +65,7 @@ def draw_centered_text(surface, text, font_path, font_size, color, x, y):
 
 
 def create_random_hexagonal_tiled_surface(
-        tile_path, canvas_size=(6400, 6400), tile_scale=1.0,
+        tile_paths, canvas_size=(6400, 6400), tile_scale=1.0,
         background_colour: Optional[pygame.Color]
         = pygame.Color(255, 255, 255, 255)
 ) -> pygame.Surface:
@@ -75,7 +75,7 @@ def create_random_hexagonal_tiled_surface(
     each tile position of (one of the) input tile(s).
 
     Parameters:
-        tile_path (Union[str, Callable[[float, float], pygame.Surface], list]):
+        tile_paths (Union[str, Callable[[float, float], pygame.Surface], list]):
             The filepath to the tile image or a callable function that returns a tile 
             surface based on x and y fractional coordinates, or a non-empty list
             of these.
@@ -103,22 +103,19 @@ def create_random_hexagonal_tiled_surface(
     # canvas.fill((179, 179, 179))  # Fill with grey 30% (0xB3)
     # canvas.fill((255,255,255))  # Fill with white
 
-    if not isinstance(tile_path, list):
-        tile_path = [tile_path]
+    if not isinstance(tile_paths, list):
+        tile_paths = [tile_paths]
 
     # Load image(s) if files
     full_tiles = [
-        pygame.image.load(tile_path) if isinstance(tile_path, str) \
-            else tile_path
-        for tp in tile_path
+        pygame.image.load(tp) if isinstance(tp, str) else tp
+        for tp in tile_paths
     ]
 
     # a callable tile takes two [0,1] arguments (x and y fractions along the
     # plane.  In this case we'll get one tile just to measure it.
     if callable(full_tiles[0]):
         full_tile0 = full_tiles[0](0.0, 0.0)
-    elif isinstance(full_tiles[0], str):
-        full_tile0 = pygame.image.load(full_tiles[0])
     else:
         full_tile0 = full_tiles[0]
 
@@ -137,8 +134,6 @@ def create_random_hexagonal_tiled_surface(
         if callable(full_tile):
             scaled_tiles.append(full_tile)
         else:
-            if isinstance(full_tile, str):
-                full_tile = pygame.image.load(full_tile)
             scaled_tiles.append(
                 pygame.transform.smoothscale_by(full_tile, tile_scale))
 
