@@ -55,7 +55,7 @@ def project_image_to_torus(
     rw = (uv_width - 1) / (2 * math.pi)
     rh = (uv_height - 1) / (2 * math.pi)
 
-    camera_matrix = translate(0, 0, z=(rh + rw) * 2) @ rotate_x(
+    camera_matrix = translate(0, 0, z=(rh + rw) * 1.5) @ rotate_x(
         math.radians(30))
     render_matrix = NDC_to_raster_matrix(*output_size)
 
@@ -73,7 +73,7 @@ def project_image_to_torus(
     # output plane (X, Y)
     how, hoh = output_size[0] / 2, output_size[1] / 2
     layer = pygame.Surface(size=output_size, flags=pygame.SRCALPHA)
-    layer.fill((255, 224, 224, 255))
+    layer.fill((255, 255, 255, 255))
 
     layer.unlock()
     plane.unlock()
@@ -151,12 +151,12 @@ if __name__ == "__main__":
 
     if 1:
         import brain_tile
-        height = 50
+        height = 250
         tiles = []
         for i in range(6):
             colours = ['0xfd8a8a', '0xffcbcb', '0x9ea1d4',
                        '0xf1f7b5', '0xa8d1d1', '0xdfebeb']
-            tile, side, points = brain_tile.create_canvas(50)
+            tile, side, points = brain_tile.create_canvas(height + 1)
             pygame.draw.polygon(tile, pygame.Color(colours[i]), points, 0)
             tiles.append(tile)
             pygame.draw.polygon(tile, pygame.Color(colours[i]), points, 1)

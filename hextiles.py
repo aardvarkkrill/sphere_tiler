@@ -121,7 +121,10 @@ def create_random_hexagonal_tiled_surface(
 
     scaled_tile0 = pygame.transform.smoothscale_by(full_tile0, tile_scale)
 
-    tile_height = scaled_tile0.get_height()
+    # subtracting 1 puts the tiles a bit closer together, avoiding ugly gaps.
+    # but it is a hack.  ideally this would be factored in to the tile design
+    # which would have some bleed.
+    tile_height = scaled_tile0.get_height() - 1
     tile_radius = tile_height / math.sqrt(3)
     tile_diameter = tile_height * 2 / math.sqrt(3)
     num_tiles_x = 1 + math.ceil(canvas_size[0] * 2 / (3 * tile_radius))
