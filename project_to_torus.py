@@ -51,26 +51,43 @@ def project_image_to_torus(
     uv_width, uv_height = plane.get_size()
 
     # torus (in model space, x,y,z)
+    # rw is the radius of the wheel, rh the radius of the tube
     rw = (uv_width - 1) / (2 * math.pi)
     rh = (uv_height - 1) / (2 * math.pi)
 
-    camera_matrix = translate(0, 0, z=(rh + rw)) @ rotate_x(math.radians(30))
+    camera_matrix = translate(0, 0, z=(rh + rw) * 2) @ rotate_x(
+        math.radians(30))
     render_matrix = NDC_to_raster_matrix(*output_size)
+
+    # compute the relevant Z range in image space
+    model_bbox = numpy.array(
+        [[x, y, z, 1.0] for x in (- rw - rh, rw + rh)
+         for y in (- rw - rh, rw + rh)
+         for z in (-rh, rh)
+         ]
+    ).transpose()
+    render_Zs = (camera_matrix @ model_bbox)[2, :]
+    Z_min, Z_max = min(render_Zs), max(render_Zs)
+    Zscale = 255 / (Z_max - Z_min)
 
     # output plane (X, Y)
     how, hoh = output_size[0] / 2, output_size[1] / 2
     layer = pygame.Surface(size=output_size, flags=pygame.SRCALPHA)
-    layer.fill((255, 255, 255, 255))
+    layer.fill((255, 224, 224, 255))
 
-    for theta in numpy.linspace(0, 2 * math.pi, max(*output_size) * 4):
+    layer.unlock()
+    plane.unlock()
+
+    for theta in numpy.linspace(0, 2 * math.pi, 3 * max(*output_size)):
         progress = theta / (2 * math.pi) * 100  # Calculate progress percentage
         sys.stdout.write(
             f"\rTorus wrapping Progress: {progress:.0f}%")  # Overwrite the progress line
         sys.stdout.flush()  # Ensure the progress line gets updated immediately
 
         stheta, ctheta = math.sin(theta), math.cos(theta)
-        for phi in numpy.linspace(0, 2 * math.pi, max(*output_size) * 4):
-            u, v = round(rw * theta), round(rh * phi)
+        u = round(rw * theta)
+        for phi in numpy.linspace(0, 2 * math.pi, 3 * max(*output_size)):
+            v = round(rh * phi)
             pixel_colour = plane.get_at((u, v))
 
             # pixel is fully transparent
@@ -83,21 +100,38 @@ def project_image_to_torus(
             #     |   O   |    ---> x
             #      \     /     |
             #       -----      v y
-            cphi = math.cos(phi)
-            x = (rw + rh * cphi) * ctheta
-            y = (rw + rh * cphi) * stheta
+            l = rw + rh * math.cos(phi)
+            x = l * ctheta
+            y = l * stheta
             z = rh * math.sin(phi)
 
             X, Y, Z = (camera_matrix @ [x, y, z, 1])[:3]
-            sx, sy = round(how + X * how / Z), round(hoh - Y * hoh)
+            if Z < 0:
+                continue
+
+            sx, sy = round(how + X * how / Z), round(hoh - Y * hoh / Z)
             if 0 <= sx < output_size[0] and 0 <= sy < output_size[1]:
+                # encoding depth in the alpha channel.
+                # Smaller numbers are closer
+                Z_depth = int(clamp(round((Z - Z_min) * Zscale), 0, 255))
                 # Set the pixel
-                if pixel_colour[3] > 0:
+                old_pixel = layer.get_at((sx, sy))
+                if old_pixel.a > Z_depth:
+                    pixel_colour.a = Z_depth
                     layer.set_at((sx, sy), pixel_colour)
 
-    sys.stdout.write("\r")  # Clear the progress line
-    sys.stdout.flush()  # Ensure the progress line gets updated immediately
+        sys.stdout.write("\r")  # Clear the progress line
+        sys.stdout.flush()  # Ensure the progress line gets updated immediately
+
+    for i in range(output_size[0]):
+        for j in range(output_size[1]):
+            p = layer.get_at((i, j))
+            p.a = 255
+            layer.set_at((i, j), p)
+
+    layer.lock()
     return layer
+
 
 # Usage example
 if __name__ == "__main__":
@@ -107,9 +141,39 @@ if __name__ == "__main__":
         shade = 0.3 if len(sys.argv) <= 3 else float(sys.argv[3])
 
 
-    # plane_file = "leafy_plane_v3.png"
-    plane_file = "amazon_crop.jpg"
-    plane = pygame.image.load(plane_file)
+    if 0:
+        # plane_file = "leafy_plane_v3.png"
+        plane_file = "amazon.jpg"
+        plane = pygame.image.load(plane_file)
 
-    torus = project_image_to_torus((400, 400), plane)
-    pygame.image.save(torus, "torus.png")
+        torus = project_image_to_torus((400, 400), plane)
+        pygame.image.save(torus, "torus.png")
+
+    if 1:
+        import brain_tile
+        height = 50
+        tiles = []
+        for i in range(6):
+            colours = ['0xfd8a8a', '0xffcbcb', '0x9ea1d4',
+                       '0xf1f7b5', '0xa8d1d1', '0xdfebeb']
+            tile, side, points = brain_tile.create_canvas(50)
+            pygame.draw.polygon(tile, pygame.Color(colours[i]), points, 0)
+            tiles.append(tile)
+            pygame.draw.polygon(tile, pygame.Color(colours[i]), points, 1)
+            tiles.append(tile)
+
+
+        import hextiles
+        plane = hextiles.create_random_hexagonal_tiled_surface(
+            tiles,
+            (height * 19, height * 10),
+            1.0,
+            pygame.Color(0,0,0,255)
+        )
+        import show_canvas
+        show_canvas.show_canvas(plane)
+
+        torus = project_image_to_torus((400, 400), plane)
+        pygame.image.save(torus, "torus.png")
+
+
