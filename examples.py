@@ -63,7 +63,27 @@ def ribbon_torus(size: int = 1200,
     torus = project_to_torus.project_image_to_torus((size, size), plane)
     pygame.image.save(torus, f"ribbon_torus_{size}.png")
 
-# fast = True
-fast = False
+def bagel_torus(size: int = 1200,
+                bg_colour: pygame.Color = pygame.Color(179,155,133,255)):
+    # makes a torus out of hexagonal tiles with pink ribbon
+    # 1200 takes ~5 minutes, use 400 for a quick look
+    tile = pygame.image.load("bagel_tile_250.png")
+    height = tile.get_height() - 1
+    plane = hextiles.create_random_hexagonal_tiled_surface(
+        tile,
+        (height * 19, height * 10),
+        1.0,
+        background_colour=bg_colour,
+        toroidal=True
+    )
+
+    pygame.image.save(plane, f"bagel_plane.png")
+
+    torus = project_to_torus.project_image_to_torus((size, size), plane)
+    pygame.image.save(torus, f"bagel_torus_{size}.jpg")
+
+fast = True
+# fast = False
 # pastel_torus(400 if fast else 1200)
-ribbon_torus(400 if fast else 1200)
+# ribbon_torus(400 if fast else 1200)
+bagel_torus(400 if fast else 1200)

@@ -56,7 +56,7 @@ def project_image_to_torus(
     rh = (uv_height - 1) / (2 * math.pi)
 
     camera_matrix = translate(0, 0, z=(rh + rw) * 1.5) @ rotate_x(
-        math.radians(30))
+        math.radians(50))
     render_matrix = NDC_to_raster_matrix(*output_size)
 
     # compute the relevant Z range in image space
@@ -80,7 +80,10 @@ def project_image_to_torus(
     layer.unlock()
     plane.unlock()
 
-    for theta in numpy.linspace(0, 2 * math.pi, round(3.5 * max(*output_size))):
+    # bigger is smoother, but takes longer.
+    sampling = 4.5
+
+    for theta in numpy.linspace(0, 2 * math.pi, round(sampling * max(*output_size))):
         progress = theta / (2 * math.pi) * 100  # Calculate progress percentage
         sys.stdout.write(
             f"\rTorus wrapping Progress: {progress:.0f}%")  # Overwrite the progress line
@@ -89,7 +92,7 @@ def project_image_to_torus(
         stheta, ctheta = math.sin(theta), math.cos(theta)
         u = round(rw * theta)
         for phi in numpy.linspace(0, 2 * math.pi,
-                                  round(3.5 * max(*output_size))):
+                                  round(sampling * max(*output_size))):
             v = round(rh * phi)
             pixel_colour = plane.get_at((u, v))
 
