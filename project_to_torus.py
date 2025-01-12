@@ -73,12 +73,14 @@ def project_image_to_torus(
     # output plane (X, Y)
     how, hoh = output_size[0] / 2, output_size[1] / 2
     layer = pygame.Surface(size=output_size, flags=pygame.SRCALPHA)
+    # note: alpha=255 codes for Z_max, so will be overwritten by any
+    # non-transparent pixel
     layer.fill((255, 255, 255, 255))
 
     layer.unlock()
     plane.unlock()
 
-    for theta in numpy.linspace(0, 2 * math.pi, 3 * max(*output_size)):
+    for theta in numpy.linspace(0, 2 * math.pi, round(3.5 * max(*output_size))):
         progress = theta / (2 * math.pi) * 100  # Calculate progress percentage
         sys.stdout.write(
             f"\rTorus wrapping Progress: {progress:.0f}%")  # Overwrite the progress line
@@ -86,7 +88,8 @@ def project_image_to_torus(
 
         stheta, ctheta = math.sin(theta), math.cos(theta)
         u = round(rw * theta)
-        for phi in numpy.linspace(0, 2 * math.pi, 3 * max(*output_size)):
+        for phi in numpy.linspace(0, 2 * math.pi,
+                                  round(3.5 * max(*output_size))):
             v = round(rh * phi)
             pixel_colour = plane.get_at((u, v))
 
@@ -117,12 +120,20 @@ def project_image_to_torus(
                 # Set the pixel
                 old_pixel = layer.get_at((sx, sy))
                 if old_pixel.a > Z_depth:
-                    pixel_colour.a = Z_depth
-                    layer.set_at((sx, sy), pixel_colour)
+                    # fully opaque pixels just overwrite
+                    if pixel_colour.a == 255:
+                        pixel_colour.a = Z_depth
+                        layer.set_at((sx, sy), pixel_colour)
+                    else:
+                        # partially transparent colour is a lerp
+                        new_colour = pixel_colour.lerp(old_pixel, pixel_colour.a / 255)
+                        new_colour.a = Z_depth
+                        layer.set_at((sx, sy), new_colour)
 
         sys.stdout.write("\r")  # Clear the progress line
         sys.stdout.flush()  # Ensure the progress line gets updated immediately
 
+    # convert Z field of each pixel back to solid colour
     for i in range(output_size[0]):
         for j in range(output_size[1]):
             p = layer.get_at((i, j))
@@ -150,30 +161,4 @@ if __name__ == "__main__":
         pygame.image.save(torus, "torus.png")
 
     if 1:
-        import brain_tile
-        height = 250
-        tiles = []
-        for i in range(6):
-            colours = ['0xfd8a8a', '0xffcbcb', '0x9ea1d4',
-                       '0xf1f7b5', '0xa8d1d1', '0xdfebeb']
-            tile, side, points = brain_tile.create_canvas(height + 1)
-            pygame.draw.polygon(tile, pygame.Color(colours[i]), points, 0)
-            tiles.append(tile)
-            pygame.draw.polygon(tile, pygame.Color(colours[i]), points, 1)
-            tiles.append(tile)
-
-
-        import hextiles
-        plane = hextiles.create_random_hexagonal_tiled_surface(
-            tiles,
-            (height * 19, height * 10),
-            1.0,
-            pygame.Color(0,0,0,255)
-        )
-        import show_canvas
-        show_canvas.show_canvas(plane)
-
-        torus = project_image_to_torus((400, 400), plane)
-        pygame.image.save(torus, "torus.png")
-
-
+        pass

@@ -58,6 +58,7 @@ def create_canvas_and_save_output1(tile_path: str, output_path: str,
 
 # Draw centered text at specified coordinates
 def draw_centered_text(surface, text, font_path, font_size, color, x, y):
+    pygame.font.init()
     font = pygame.font.Font(font_path, font_size)
     rendered_text = font.render(text, True, color)
     text_rect = rendered_text.get_rect(center=(x, y))
@@ -67,7 +68,8 @@ def draw_centered_text(surface, text, font_path, font_size, color, x, y):
 def create_random_hexagonal_tiled_surface(
         tile_paths, canvas_size=(6400, 6400), tile_scale=1.0,
         background_colour: Optional[pygame.Color]
-        = pygame.Color(255, 255, 255, 255)
+        = pygame.Color(255, 255, 255, 255),
+        toroidal = False
 ) -> pygame.Surface:
     """
     Generates a hexagonal tiled surface using a provided image or callable tile
@@ -88,6 +90,11 @@ def create_random_hexagonal_tiled_surface(
         background_colour (Optional[pygame.Color]): 
             The background color to fill the canvas, defaults to white 
             (pygame.Color(255, 255, 255, 255)).
+        toroidal (bool): False by default.  If true, the tiles on the left/right
+            and top/bottom edges will be the same.  It's up to the caller to
+            make sure that the repeats match an integral number of tiles.  To do
+            this, set the size to (height*m, height*n) where m is odd and n is
+            even.
 
     Returns:
         pygame.Surface: 
@@ -158,14 +165,33 @@ def create_random_hexagonal_tiled_surface(
             f"\rRandom-plane Progress: {progress:.0f}%")  # Overwrite the progress line
         sys.stdout.flush()  # Ensure the progress line gets updated immediately
 
-        even_row = row % 2 == 0
-        for col in range((0 if even_row else 1), num_tiles_x, 2):
+        even_row = row % 2
+        for col in range(even_row, num_tiles_x, 2):
             x = col * tile_radius * 3 / 2
             y = row * tile_height / 2
 
-            select = random.randint(0, len(scaled_tiles) - 1)
-            selections[row, col] = select
-            scaled_tile = scaled_tiles[select]
+            if toroidal:
+                last_col = (col == num_tiles_x - 1)
+                last_row = (row == num_tiles_y - 1)
+                if last_col and last_row:
+                    chosen_tile = selections[0, 0]
+                    chosen_rotation = rotations[0, 0]
+                elif last_col:
+                    chosen_tile = selections[row, 0]
+                    chosen_rotation = rotations[row, 0]
+                elif last_row:
+                    chosen_tile = selections[0, col]
+                    chosen_rotation = rotations[0, col]
+                else:
+                    chosen_tile = random.randint(0, len(scaled_tiles) - 1)
+                    chosen_rotation = random.choice(range(-6, 6))
+            else:
+                chosen_tile = random.randint(0, len(scaled_tiles) - 1)
+                chosen_rotation = random.choice(range(-6, 6))
+
+            selections[row, col] = chosen_tile
+            scaled_tile = scaled_tiles[chosen_tile]
+            rotations[row, col] = chosen_rotation
 
             if callable(scaled_tile):
                 full_tile = scaled_tile(
@@ -174,15 +200,11 @@ def create_random_hexagonal_tiled_surface(
                 scaled_tile = pygame.transform.smoothscale_by(full_tile,
                                                               tile_scale)
 
-            # Random rotation
-            choice = random.choice(range(-6, 6))
-            rotations[row, col] = choice
-
-            if choice < 0:
-                choice = -choice
+            if chosen_rotation < 0:
+                chosen_rotation = -chosen_rotation
                 scaled_tile = pygame.transform.flip(scaled_tile, True, False)
 
-            angle = choice * 360 / 6
+            angle = chosen_rotation * 360 / 6
             rotated_image = pygame.transform.rotate(scaled_tile, angle)
 
             # Blit to canvas (adjust to ensure center alignment)
@@ -190,8 +212,8 @@ def create_random_hexagonal_tiled_surface(
                         (round(x - rotated_image.get_width() / 2),
                          round(y - rotated_image.get_height() / 2)))
 
-            # draw_centered_text(canvas, str(choice),
-            #                    pygame.font.get_default_font(), 48, (0, 255, 128),
+            # draw_centered_text(canvas, f"r{row},c{col}",
+            #                    pygame.font.get_default_font(), 48, (0, 0, 0),
             #                    x, y)
 
     sys.stdout.write(f"\rRandom-plane Done.")  # Overwrite the progress line
