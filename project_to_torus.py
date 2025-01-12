@@ -41,13 +41,15 @@ def project_image_to_torus(
         output_size: Tuple[int, int],
         plane: pygame.Surface,
         shadow_amount: float = 0.6,
-        parallel_light: (float, float, float) = (-1, -1, 1)
+        parallel_light: (float, float, float) = (-1, -1, 1),
+        shading_model: str = 'halflambertian'
 ) -> pygame.Surface:
     """ Given an image on a surface, wrap it around a torus and project that
         onto an output plane (in a way yet to be determined)
         If shadow_amount > 0, it will add shadow (larger values are darker.)
         We assume that the light comes from a parallel source, parallel to the
         vector given in model (world) space.
+        shading_model can be 'halflambertian', 'lambertian' or 'simple'
     """
 
     # input plane (u, v)
@@ -86,12 +88,17 @@ def project_image_to_torus(
     layer.unlock()
     plane.unlock()
 
-    # bigger is smoother, but takes longer.
+    # bigger is smoother, but takes longer, and repeats pixels.
+    # TODO: dynamically modify the sampling rate depending on the projection
+    #       (probably the derivative in the image space?)  We're aiming to get
+    #       one sample per pixel.
     sampling = 4.5
 
-    for theta in numpy.linspace(0, 2 * math.pi, round(sampling * max(*output_size))):
+    for theta in numpy.linspace(0, 2 * math.pi,
+                                round(sampling * max(*output_size))):
         progress = theta / (2 * math.pi) * 100  # Calculate progress percentage
-        print(f"\rTorus wrapping: {progress:.0f}%", end="", flush=True)  # Overwrite the progress line
+        print(f"\rTorus wrapping: {progress:.0f}%", end="",
+              flush=True)  # Overwrite the progress line
 
         stheta, ctheta = math.sin(theta), math.cos(theta)
         u = round(rw * theta)
@@ -114,7 +121,8 @@ def project_image_to_torus(
 
             # calculate the surface normal in model space
             normed_dxyz_by_dtheta = numpy.array((-stheta, ctheta, 0))
-            normed_dxyz_by_dphi = numpy.array((-sphi * ctheta, -sphi * stheta, cphi))
+            normed_dxyz_by_dphi = numpy.array(
+                (-sphi * ctheta, -sphi * stheta, cphi))
             normal = numpy.cross(normed_dxyz_by_dtheta, normed_dxyz_by_dphi)
 
             # surface pointing away from the camera is skipped.  For this,
@@ -124,20 +132,27 @@ def project_image_to_torus(
             #     continue
 
             # shading just depends on the angle between the normal and the light
-            shade = parallel_light.dot(normal) * shadow_amount
-            if shade > 0:
-                pixel_colour = pixel_colour.lerp(pygame.Color(0, 0, 0, pixel_colour.a),
-                                             shade)
-            else:
-                pixel_colour = pixel_colour.lerp(pygame.Color(255, 255, 255, pixel_colour.a),
-                                                -shade)
+            # Our backwards model means that larger = darker
+            if shading_model == 'simple':
+                shade = parallel_light.dot(normal) * shadow_amount
+                if shade > 0:
+                    pixel_colour = pixel_colour.lerp(
+                        pygame.Color(0, 0, 0, pixel_colour.a),
+                        shade)
+                else:
+                    pixel_colour = pixel_colour.lerp(
+                        pygame.Color(255, 255, 255, pixel_colour.a),
+                        -shade)
+            elif shading_model == 'halflambertian':
+                light = (0.5 - 0.5 * parallel_light.dot(normal))
+                pixel_colour = pygame.Color(0, 0, 0, pixel_colour.a).lerp(
+                    pixel_colour, light)
 
             # surface of model in model space
             l = rw + rh * cphi
             x = l * ctheta
             y = l * stheta
             z = rh * sphi
-
 
             X, Y, Z = (camera_matrix @ [x, y, z, 1])[:3]
             if Z < 0:
@@ -170,7 +185,8 @@ def project_image_to_torus(
                         layer.set_at((sx, sy), pixel_colour)
                     else:
                         # partially transparent colour is a lerp
-                        new_colour = pixel_colour.lerp(old_pixel, pixel_colour.a / 255)
+                        new_colour = pixel_colour.lerp(old_pixel,
+                                                       pixel_colour.a / 255)
                         new_colour.a = Z_depth
                         layer.set_at((sx, sy), new_colour)
 

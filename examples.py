@@ -86,4 +86,4 @@ def bagel_torus(size: int = 1200,
 fast = False
 # pastel_torus(400 if fast else 1200)
 # ribbon_torus(400 if fast else 1200)
-bagel_torus(405 if fast else 1200)
+bagel_torus(200 if fast else 1200)
