@@ -82,8 +82,8 @@ def bagel_torus(size: int = 1200,
     torus = project_to_torus.project_image_to_torus((size, size), plane)
     pygame.image.save(torus, f"bagel_torus_{size}.jpg")
 
-fast = True
-# fast = False
+# fast = True
+fast = False
 # pastel_torus(400 if fast else 1200)
 # ribbon_torus(400 if fast else 1200)
-bagel_torus(400 if fast else 1200)
+bagel_torus(405 if fast else 1200)

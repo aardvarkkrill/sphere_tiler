@@ -1,3 +1,4 @@
+import random
 import sys
 import math
 from typing import Optional, Tuple
@@ -39,12 +40,14 @@ def NDC_to_raster_matrix(width: int, height: int) -> numpy.ndarray:
 def project_image_to_torus(
         output_size: Tuple[int, int],
         plane: pygame.Surface,
-        shadow_amount: float = 0.3,
-        sphere_centre_xy: Optional[Tuple[float, float]] = None,
-        sphere_centre_z: Optional[float] = None) -> pygame.Surface:
+        shadow_amount: float = 0.6,
+        parallel_light: (float, float, float) = (-1, -1, 1)
+) -> pygame.Surface:
     """ Given an image on a surface, wrap it around a torus and project that
         onto an output plane (in a way yet to be determined)
         If shadow_amount > 0, it will add shadow (larger values are darker.)
+        We assume that the light comes from a parallel source, parallel to the
+        vector given in model (world) space.
     """
 
     # input plane (u, v)
@@ -54,6 +57,9 @@ def project_image_to_torus(
     # rw is the radius of the wheel, rh the radius of the tube
     rw = (uv_width - 1) / (2 * math.pi)
     rh = (uv_height - 1) / (2 * math.pi)
+
+    parallel_light = numpy.array(parallel_light, dtype=numpy.float32)
+    parallel_light /= numpy.linalg.norm(parallel_light)
 
     camera_matrix = translate(0, 0, z=(rh + rw) * 1.5) @ rotate_x(
         math.radians(50))
@@ -85,9 +91,7 @@ def project_image_to_torus(
 
     for theta in numpy.linspace(0, 2 * math.pi, round(sampling * max(*output_size))):
         progress = theta / (2 * math.pi) * 100  # Calculate progress percentage
-        sys.stdout.write(
-            f"\rTorus wrapping Progress: {progress:.0f}%")  # Overwrite the progress line
-        sys.stdout.flush()  # Ensure the progress line gets updated immediately
+        print(f"\rTorus wrapping: {progress:.0f}%", end="", flush=True)  # Overwrite the progress line
 
         stheta, ctheta = math.sin(theta), math.cos(theta)
         u = round(rw * theta)
@@ -106,17 +110,54 @@ def project_image_to_torus(
             #     |   O   |    ---> x
             #      \     /     |
             #       -----      v y
-            l = rw + rh * math.cos(phi)
+            cphi, sphi = math.cos(phi), math.sin(phi)
+
+            # calculate the surface normal in model space
+            normed_dxyz_by_dtheta = numpy.array((-stheta, ctheta, 0))
+            normed_dxyz_by_dphi = numpy.array((-sphi * ctheta, -sphi * stheta, cphi))
+            normal = numpy.cross(normed_dxyz_by_dtheta, normed_dxyz_by_dphi)
+
+            # surface pointing away from the camera is skipped.  For this,
+            # transform the normal with the rotation part of the camera matrix.
+            # normal_in_camera_space = camera_matrix[:3, :3] @ normal
+            # if normal_in_camera_space[2] < 1e-3:
+            #     continue
+
+            # shading just depends on the angle between the normal and the light
+            shade = parallel_light.dot(normal) * shadow_amount
+            if shade > 0:
+                pixel_colour = pixel_colour.lerp(pygame.Color(0, 0, 0, pixel_colour.a),
+                                             shade)
+            else:
+                pixel_colour = pixel_colour.lerp(pygame.Color(255, 255, 255, pixel_colour.a),
+                                                -shade)
+
+            # surface of model in model space
+            l = rw + rh * cphi
             x = l * ctheta
             y = l * stheta
-            z = rh * math.sin(phi)
+            z = rh * sphi
+
 
             X, Y, Z = (camera_matrix @ [x, y, z, 1])[:3]
             if Z < 0:
+                # Behind camera
                 continue
 
             sx, sy = round(how + X * how / Z), round(hoh - Y * hoh / Z)
             if 0 <= sx < output_size[0] and 0 <= sy < output_size[1]:
+
+                # # draw 1% of normals
+                # if random.randint(0, 10000) < 10:
+                #     NX, NY, NZ = normal_in_camera_space * rh/2 + numpy.array([X, Y, Z])
+                #     snx, sny = round(how + NX * how / NZ), round(hoh - NY * hoh / NZ)
+                #     if 0 <= snx < output_size[0] and 0 <= sny < output_size[1]:
+                #         pygame.draw.circle(layer, pygame.Color(255, 0, 0, 255), (sx, sy), 2)
+                #         pygame.draw.line(layer, pygame.Color(0, 0, 0, 255), (sx, sy),
+                #             (snx, sny), 1)
+                #
+                # continue
+
                 # encoding depth in the alpha channel.
                 # Smaller numbers are closer
                 Z_depth = int(clamp(round((Z - Z_min) * Zscale), 0, 255))
@@ -133,8 +174,7 @@ def project_image_to_torus(
                         new_colour.a = Z_depth
                         layer.set_at((sx, sy), new_colour)
 
-        sys.stdout.write("\r")  # Clear the progress line
-        sys.stdout.flush()  # Ensure the progress line gets updated immediately
+        print("\r", end="", flush=True)  # Clear the progress line
 
     # convert Z field of each pixel back to solid colour
     for i in range(output_size[0]):
