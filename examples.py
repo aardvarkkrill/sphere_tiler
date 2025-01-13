@@ -41,7 +41,7 @@ def pastel_torus(size: int = 1200):
     pygame.image.save(plane, f"pastel_plane.png")
 
     torus = project_to_torus.project_image_to_torus((size, size), plane)
-    pygame.image.save(torus, f"pastel_torus_{size}.png")
+    pygame.image.save(torus, f"pastel_torus_{size}.jpg")
 
 
 def ribbon_torus(size: int = 1200,
@@ -61,7 +61,7 @@ def ribbon_torus(size: int = 1200,
     pygame.image.save(plane, f"ribbon_plane.png")
 
     torus = project_to_torus.project_image_to_torus((size, size), plane)
-    pygame.image.save(torus, f"ribbon_torus_{size}.png")
+    pygame.image.save(torus, f"ribbon_torus_{size}.jpg")
 
 def bagel_torus(size: int = 1200,
                 bg_colour: pygame.Color = pygame.Color(179,155,133,255)):
@@ -84,6 +84,6 @@ def bagel_torus(size: int = 1200,
 
 # fast = True
 fast = False
-# pastel_torus(400 if fast else 1200)
-# ribbon_torus(400 if fast else 1200)
-bagel_torus(200 if fast else 1200)
+pastel_torus(400 if fast else 1200)
+ribbon_torus(400 if fast else 1200)
+# bagel_torus(200 if fast else 1200)

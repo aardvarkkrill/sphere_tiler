@@ -32,6 +32,16 @@ The file `nested_spheres.py` has functions to generate some pretty objects. Thes
 by nesting several partially transparent spheres to get a sense of depth. You'll need to uncomment
 the ones you want to try (at the bottom of the file) before running it.
 
+## Torus
+
+The file `project_to_torus.py` has function which can wrap a plane around a torus and shade it.
+It's slow.  For a 1200 pixel square output it's taking about 20 minutes on my machine.  This would be better
+done by GPU, or at least in a compiled-to-native-code language.  
+
+There are three examples of this in the `examples.py` file.  One to map the pink-ribboned plane,
+one for a plane made of pastel hexagons, and one to make a torus out of images of a bagel.
+See `make_bagel.py` for how to make the bagel tile image.
+
 That's all!
 
 Please do mention aardvarkkrill if you do anything good with this code. And tell me about it!
