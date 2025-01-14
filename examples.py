@@ -82,8 +82,27 @@ def bagel_torus(size: int = 1200,
     torus = project_to_torus.project_image_to_torus((size, size), plane)
     pygame.image.save(torus, f"bagel_torus_{size}.jpg")
 
+
+# Example Renders.  Simply uncomment the ones you want to render.
+# The 'fast' version in each case gives a much rougher view, for testing.
+
 # fast = True
 fast = False
-pastel_torus(400 if fast else 1200)
-ribbon_torus(400 if fast else 1200)
+
+############# Planes and Spheres
+
+import nested_spheres
+
+nested_spheres.pink_sphere()
+# nested_spheres.yellow_cyan_sphere()
+# nested_spheres.brain_sphere()
+# nested_spheres.rainbow_sphere()
+# nested_spheres.twig_tile()
+# nested_spheres.leafy_sphere()
+
+
+############ Bagels
+
+# pastel_torus(400 if fast else 1200)
+# ribbon_torus(400 if fast else 1200)
 # bagel_torus(200 if fast else 1200)

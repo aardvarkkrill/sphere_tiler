@@ -132,6 +132,7 @@ def rainbow_sphere():
 
 
 def twig_tile():
+    # This is a simple tile that I used as a model to draw my leafy tile.
     tile = rainbow_tile.pink_tile(pygame.Color(107, 65, 44, 255),
                                   extent=0.08, shade_overlap=False)
     show_canvas.show_canvas(tile)
@@ -159,29 +160,10 @@ def leafy_sphere():
     pygame.image.save(sphere, sphere_name)
     show_canvas.show_canvas(sphere, (600, 600))
 
-    # sphere_name = f"{base_name}_sphere.png"
-    # if not os.path.exists(tile_name):
-    #     sys.exit(-1)
-    #
-    # # create plane if it doesn't already exist, or is older than its tile
-    # if not os.path.exists(plane_name) or \
-    #         os.path.getmtime(plane_name) < os.path.getmtime(tile_name):
-    #     plane = hextiles.create_random_hexagonal_tiled_surface(
-    #         tile_name, (6400, 6400), 0.25,
-    #         pygame.Color(0, 0, 0, 0)
-    #     )
-    #     pygame.image.save(plane, plane_name)
-    # else: # otherwise just load it
-    #     pink_plane = pygame.image.load(plane_name)
-    #
-    # sphere = make_nest(plane)
-    # pygame.image.save(sphere, sphere_name)
-    # show_canvas.show_canvas(sphere, (600, 600))
-
 
 # pink_sphere()
 # yellow_cyan_sphere()
 # brain_sphere()
 # rainbow_sphere()
 # twig_tile()
-leafy_sphere()
+# leafy_sphere()
