@@ -27,11 +27,12 @@ Preheat the oven to 220 degrees Celsius.
 
 Coat each bagel on the top with a little olive oil.
 
-Boil a large, wide pan of water and add a teaspoon of baking powder.  Put the
+Boil a wide pan of water 4cm deep (or more -- deep enough for the dough to float
+in without sticking to the bottome) and add a teaspoon of baking powder. Put the
 bagels in a few at a time (they shouldn't touch each other) boil for 30 seconds
 on each side and put them on a wire rack.  While the next batch boil you can
-dip one side of the draining bagels in a plate of dark poppy seeds.  You can
-use sesame seeds too.  When coated, put them on parchment paper onbaking sheets
+dip one side of the draining bagels in a plate of dark poppy seeds.  You could
+use sesame seeds too.  When coated, put them on parchment paper on baking sheets
 and bake immediately at 220 degrees Celsius for about 15 minutes, turn them over
 and do a couple more minutes to dry them off underneath.  Don't over-cook them
 as you want them to be soft. 
@@ -40,5 +41,6 @@ Take them out of the oven and cool them on a wire rack.
 
 Before you split them, and smother them in cream cheese with smoked salmon, 
 fresh dill, lemon juice and black pepper, don't forget to take a photograph
-of one to make a tile image.
+of one to make a tile image.  Set all the background to transparent, and save
+as a .png file.
 """)
