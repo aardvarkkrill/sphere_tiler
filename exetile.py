@@ -1,10 +1,18 @@
 from typing import Union, List, Tuple, Optional
+import math
 
 import numpy
 import pygame
 
 Point2 = numpy.ndarray  # must be 2x1 element column vector.
 Vertices = list[Point2]
+
+
+def expand_colour(colourspec, *params):
+    if isinstance(colourspec, pygame.Color) or len(params) == 0:
+        return colourspec
+    else:
+        return expand_colour(colourspec(params[0]), *params[1:])
 
 
 class LineArtist(object):
@@ -27,15 +35,26 @@ class PlaneLineArtist(LineArtist):
         self.surface = surface
         self.centre = numpy.array((surface.get_width() / 2,
                                    surface.get_height() / 2))
+        # y points down, so invert
+        # NOTE: still scale by half width, not half height!
+        self.scalexy = numpy.array([self.centre[0], -self.centre[0]])
 
     def stroke(self, a: Point2, b: Point2, colour: pygame.Color, width: int):
-        pygame.draw.line(self.surface, colour, a, b, width)
+        ai = self.camera_to_image_space(self.model_to_camera_space(a))
+        bi = self.camera_to_image_space(self.model_to_camera_space(b))
+        pygame.draw.line(self.surface, colour, ai, bi, width)
 
     def model_to_camera_space(self, points2d: numpy.ndarray) -> numpy.ndarray:
-        return numpy.hstack((points2d, numpy.ones((points2d.shape[0], 1))))
+        if points2d.ndim == 1:
+            return numpy.array((*points2d, 1.0))
+        else:
+            return numpy.hstack((points2d, numpy.ones((points2d.shape[0], 1))))
 
     def camera_to_image_space(self, points3d: numpy.ndarray) -> numpy.ndarray:
-        return points3d[:, :-1] * self.centre[0] + self.centre
+        if points3d.ndim == 1:
+            return points3d[:-1] * self.scalexy + self.centre
+        else:
+            return points3d[:, :-1] * self.scalexy + self.centre
 
 
 BMatrix = numpy.array([[1, 0, 0, 0],
@@ -50,10 +69,7 @@ def bezier(P1, N1, N2, P2, ts):
     T = numpy.vstack(
         [numpy.ones(ts.shape), ts, tsquareds, tsquareds * ts]).transpose()
     P = numpy.vstack((P1, N1, N2, P2))
-    print(T)
-    print(P)
     B = T @ BMatrix @ P
-    print(B)
     return B
 
 
@@ -66,7 +82,7 @@ class Tile(object):
                  ):
         """ Builds a polygonal tile that can draw itself.
         vertices: the vertices in anti-clockwise order.  These are in some
-                  model space with a right-handed coordinate system.
+                  model space [-1,1]^2 with a right-handed coordinate system.
         branch_points: each edge of the tile has a number of sites where
                   branches begin.  These are centred at the given fractions of
                   distance along the edges, and width a given fraction of the
@@ -86,7 +102,7 @@ class Tile(object):
 
     def draw(self,
              line_artist: LineArtist,
-             colour: pygame.Color = pygame.color.THECOLORS['white'],
+             colourspec=pygame.color.THECOLORS['white'],
              transform: numpy.ndarray = None):
         """ draw the tile given a projection matrix to image space. """
         for i in range(self.N):
@@ -97,38 +113,51 @@ class Tile(object):
                                    pygame.color.THECOLORS['green']),
                                width=2)
         # fraction of the normal to the separation
-        normal_scale = 0.25
+        normal_scale = 0.3
         for connection in self.connections:
             from_edge, branch_index, to_edge = connection
             a1, b1 = self.endpoints(from_edge, transform)
             a2, b2 = self.endpoints(to_edge, transform)
             n1 = self.edge_normal(a1, b1)
             n2 = self.edge_normal(a2, b2)
-            centre = self.branch_points[branch_index][0]
+            branch_centre = self.branch_points[branch_index][0]
             halfwidth = self.branch_points[branch_index][1] * 0.5
 
-            def fraction_to_control_points_model(fraction: float):
-                P1 = a1 + (b1 - a1) * branch_fraction
-                P2 = a2 + (b2 - a2) * (1.0 - branch_fraction)
+            def fraction_to_control_points_model(branch_fraction_: float):
+                P1 = a1 + (b1 - a1) * branch_fraction_
+                P2 = a2 + (b2 - a2) * (1.0 - branch_fraction_)
                 N1 = P1 + n1 * numpy.linalg.norm(b1 - a1) * normal_scale
                 N2 = P2 + n2 * numpy.linalg.norm(b2 - a2) * normal_scale
                 return P1, N1, N2, P2
 
+            def estimate_pixel_width_at_branch_fraction(
+                    branch_fraction_: float):
+                ps = fraction_to_control_points_model(branch_fraction_)
+                pxa = line_artist.camera_to_image_space(
+                    line_artist.model_to_camera_space(ps[0]))
+                pxb = line_artist.camera_to_image_space(
+                    line_artist.model_to_camera_space(ps[3]))
+                return numpy.linalg.norm(pxa - pxb)
+
             # find the length of the base lines in pixels, and choose the max,
             # to estimate the number of samples required
-            px_s = fraction_to_control_points_model(centre - halfwidth)
-            px_f = fraction_to_control_points_model(centre + halfwidth)
-            samples = 2 + 2 * max(numpy.linalg.norm(px_s[0] - px_s[3]),
-                                  numpy.linalg.norm(px_f[0] - px_f[3]))
-            for branch_fraction in numpy.linspace(centre - halfwidth,
-                                                  centre + halfwidth, samples):
+            est_width_s = estimate_pixel_width_at_branch_fraction(
+                branch_centre - halfwidth)
+            est_width_f = estimate_pixel_width_at_branch_fraction(
+                branch_centre + halfwidth)
+            samples = round(2 + 2 * max(est_width_s, est_width_f))
+            for branch_fraction in numpy.linspace(branch_centre - halfwidth,
+                                                  branch_centre + halfwidth,
+                                                  samples):
                 control_points = fraction_to_control_points_model(
                     branch_fraction)
                 ts = numpy.linspace(0.0, 1.0, 50)
-                bs = bezier(P1, N1, N2, P2, ts)
+                bs = bezier(*control_points, ts)
                 b0 = bs[0]
                 for b in bs[1:]:
-                    line_artist.stroke(b0, b, colour, 2)
+                    line_artist.stroke(b0, b, expand_colour(colourspec, (
+                            branch_fraction - branch_centre) / halfwidth),
+                                       2)
                     b0 = b
 
     def endpoints(self, edge_index: int,
@@ -146,30 +175,38 @@ class Tile(object):
 
     def edge_normal(self, a: Point2, b: Point2):
         """ get the unit normal of an edge """
-        normal = numpy.array([[(a - b)[1], (b - a)[0]]])
+        normal = numpy.array([(a - b)[1], (b - a)[0]])
         return normal / numpy.linalg.norm(normal)
 
 
 import show_canvas
 
-vertices = [
-    numpy.array((100, 50), dtype=float),
-    numpy.array((300, 50), dtype=float),
-    numpy.array((250, 250), dtype=float),
-    numpy.array((450, 450), dtype=float),
-    numpy.array((100, 450), dtype=float),
-    numpy.array((50, 250), dtype=float)
-]
+N = 7
+vertices = []
+for i in range(N):
+    theta = 2 * i * math.pi / N
+    vertices.append(numpy.array((math.cos(theta), math.sin(theta))))
 
 T1 = Tile(vertices=vertices,
-          branch_points=[(0.5, 0.2)],
+          branch_points=[(0.5, 1.0)],
           connections=[(0, 0, 1), (2, 0, 4), (3, 0, 5)],
           background=pygame.Color(pygame.color.THECOLORS['blue']))
 
 s = pygame.Surface((500, 500))
 s.fill(color=pygame.Color(pygame.color.THECOLORS['black']))
-T1.draw(PlaneLineArtist(s), pygame.Color(pygame.color.THECOLORS['pink']),
-        numpy.array([[0.5, 0, 0], [0, 0.5, 0], [0, 0, 1]], numpy.float32))
+
+
+# T1.draw(PlaneLineArtist(s), pygame.Color(pygame.color.THECOLORS['magenta']))
+
+def rainbow(fraction: float) -> pygame.Color:
+    c = pygame.Color(0)
+    c.hsva = (
+        abs(fraction) * 360, 100, 100,
+        100)  # HSV: hue, saturation, value, alpha
+    return c
+
+
+T1.draw(PlaneLineArtist(s), rainbow)
 
 # s = pygame.Surface((500, 500), flags=pygame.SRCALPHA)
 # s.fill(pygame.Color(0, 0, 0, 255))
