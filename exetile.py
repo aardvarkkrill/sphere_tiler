@@ -1,4 +1,4 @@
-from typing import Union, List, Tuple
+from typing import Union, List, Tuple, Optional
 
 import numpy
 import pygame
@@ -62,14 +62,18 @@ class Tile(object):
         self.branch_points = branch_points
         self.N = len(vertices)
 
+    @staticmethod
+    def do_transform(point, transform):
+        return point if transform is None else ([*point, 1.0] @ transform)[:-1]
+
     def draw(self,
-             # transform: numpy.ndarray,
              line_artist: LineArtist,
-             colour: pygame.Color = pygame.color.THECOLORS['white']):
+             colour: pygame.Color = pygame.color.THECOLORS['white'],
+             transform: numpy.ndarray = None):
         """ draw the tile given a projection matrix to image space. """
         for i in range(self.N):
-            line_artist.stroke(a=self.vertices[i],
-                               b=self.vertices[(i + 1) % self.N],
+            line_artist.stroke(a=self.do_transform(self.vertices[i], transform),
+                               b=self.do_transform(self.vertices[(i + 1) % self.N], transform),
                                colour=pygame.Color(
                                    pygame.color.THECOLORS['green']),
                                width=2)
@@ -77,8 +81,8 @@ class Tile(object):
         normal_scale = 0.25
         for connection in self.connections:
             from_edge, branch_index, to_edge = connection
-            a1, b1 = self.endpoints(from_edge)
-            a2, b2 = self.endpoints(to_edge)
+            a1, b1 = self.endpoints(from_edge, transform)
+            a2, b2 = self.endpoints(to_edge, transform)
             n1 = self.edge_normal(a1, b1)
             n2 = self.edge_normal(a2, b2)
             centre = self.branch_points[branch_index][0]
@@ -93,13 +97,20 @@ class Tile(object):
                 bs = bezier(P1, N1, N2, P2, ts)
                 b0 = bs[0]
                 for b in bs[1:]:
-                    line_artist.stroke(b0, b, colour, 1)
+                    line_artist.stroke(b0, b, colour, 2)
                     b0 = b
 
-    def endpoints(self, edge_index) -> Tuple[Point2, Point2]:
+    def endpoints(self, edge_index: int,
+                  transform: Optional[numpy.ndarray] = None) -> Tuple[
+        Point2, Point2]:
         """ the points defining the edge of given index [0..N-1] """
-        return self.vertices[edge_index], self.vertices[
-            (edge_index + 1) % self.N]
+        a, b = self.vertices[edge_index], self.vertices[(edge_index + 1) % self.N]
+        if transform is None:
+            return a, b
+        else:
+            # we're doing (transform @ ([a,1][b,1]).transpose).transpose:
+            ta, tb = numpy.array([[*a, 1], [*b, 1]]) @ transform
+            return ta[:-1], tb[:-1]
 
     def edge_normal(self, a: Point2, b: Point2):
         """ get the unit normal of an edge """
@@ -125,7 +136,8 @@ T1 = Tile(vertices=vertices,
 
 s = pygame.Surface((500, 500))
 s.fill(color=pygame.Color(pygame.color.THECOLORS['black']))
-T1.draw(PlaneLineArtist(s), pygame.Color(pygame.color.THECOLORS['pink']))
+T1.draw(PlaneLineArtist(s), pygame.Color(pygame.color.THECOLORS['pink']),
+        numpy.array([[0.5, 0,0],[0, 0.5,0],[0,0,1]], numpy.float32))
 
 # s = pygame.Surface((500, 500), flags=pygame.SRCALPHA)
 # s.fill(pygame.Color(0, 0, 0, 255))
