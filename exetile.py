@@ -11,6 +11,7 @@ class LineArtist(object):
     def stroke(self, a: Point2, b: Point2, colour: pygame.Color, width: int):
         pass
 
+
 class PlaneLineArtist(LineArtist):
     def __init__(self, surface: pygame.Surface):
         self.surface = surface
@@ -19,15 +20,17 @@ class PlaneLineArtist(LineArtist):
         pygame.draw.line(self.surface, colour, a, b, width)
 
 
-BMatrix = numpy.array([[ 1, 0, 0, 0],
+BMatrix = numpy.array([[1, 0, 0, 0],
                        [-3, 3, 0, 0],
-                       [ 3,-6, 3, 0],
-                       [-1, 3,-3, 1]], dtype=float)
+                       [3, -6, 3, 0],
+                       [-1, 3, -3, 1]], dtype=float)
+
 
 def bezier(P1, N1, N2, P2, ts):
     # numpy treats 1-axis vectors as row vectors.
     tsquareds = ts * ts
-    T = numpy.vstack([numpy.ones(ts.shape), ts, tsquareds, tsquareds*ts]).transpose()
+    T = numpy.vstack(
+        [numpy.ones(ts.shape), ts, tsquareds, tsquareds * ts]).transpose()
     P = numpy.vstack((P1, N1, N2, P2))
     print(T)
     print(P)
@@ -64,24 +67,34 @@ class Tile(object):
              line_artist: LineArtist,
              colour: pygame.Color = pygame.color.THECOLORS['white']):
         """ draw the tile given a projection matrix to image space. """
+        for i in range(self.N):
+            line_artist.stroke(a=self.vertices[i],
+                               b=self.vertices[(i + 1) % self.N],
+                               colour=pygame.Color(
+                                   pygame.color.THECOLORS['green']),
+                               width=2)
+        # fraction of the normal to the separation
+        normal_scale = 0.25
         for connection in self.connections:
             from_edge, branch_index, to_edge = connection
             a1, b1 = self.endpoints(from_edge)
             a2, b2 = self.endpoints(to_edge)
             n1 = self.edge_normal(a1, b1)
             n2 = self.edge_normal(a2, b2)
-            # for now, just getting the centre
-            branch_fraction = self.branch_points[branch_index][0]
-            P1 = a1 + (b1 - a1) * branch_fraction
-            P2 = a2 + (b2 - a2) * branch_fraction
-            N1 = P1 + n1 * numpy.linalg.norm(b1 - a1)
-            N2 = P2 + n2 * numpy.linalg.norm(b2 - a2)
-            ts = numpy.linspace(0.0, 1.0, 10)
-            bs = bezier(P1, N1, N2, P2, ts)
-            b0 = bs[0]
-            for b in bs[1:]:
-                line_artist.stroke(b0, b, colour, 1)
-                b0 = b
+            centre = self.branch_points[branch_index][0]
+            halfwidth = self.branch_points[branch_index][1] * 0.5
+            for branch_fraction in numpy.linspace(centre - halfwidth,
+                                                  centre + halfwidth, 10):
+                P1 = a1 + (b1 - a1) * branch_fraction
+                P2 = a2 + (b2 - a2) * (1.0 - branch_fraction)
+                N1 = P1 + n1 * numpy.linalg.norm(b1 - a1) * normal_scale
+                N2 = P2 + n2 * numpy.linalg.norm(b2 - a2) * normal_scale
+                ts = numpy.linspace(0.0, 1.0, 50)
+                bs = bezier(P1, N1, N2, P2, ts)
+                b0 = bs[0]
+                for b in bs[1:]:
+                    line_artist.stroke(b0, b, colour, 1)
+                    b0 = b
 
     def endpoints(self, edge_index) -> Tuple[Point2, Point2]:
         """ the points defining the edge of given index [0..N-1] """
@@ -90,32 +103,42 @@ class Tile(object):
 
     def edge_normal(self, a: Point2, b: Point2):
         """ get the unit normal of an edge """
-        normal = numpy.array([[(b - a)[1], (a - b)[0]]])
+        normal = numpy.array([[(a - b)[1], (b - a)[0]]])
         return normal / numpy.linalg.norm(normal)
 
+
 import show_canvas
-s = pygame.Surface((500, 500), flags=pygame.SRCALPHA)
-s.fill(pygame.Color(0, 0, 0, 255))
-ts = numpy.linspace(0.0, 1.0, 30)
+
 vertices = [
-    Point2((50, 50), dtype=float),
-    Point2((300, 50), dtype=float),
-    Point2((250, 250), dtype=float),
-    Point2((450, 450), dtype=float),
-    Point2((50, 450), dtype=float)
+    numpy.array((100, 50), dtype=float),
+    numpy.array((300, 50), dtype=float),
+    numpy.array((250, 250), dtype=float),
+    numpy.array((450, 450), dtype=float),
+    numpy.array((100, 450), dtype=float),
+    numpy.array((50, 250), dtype=float)
 ]
 
-T1 = Tile(vertices, [(0.5, 0.2)], background=pygame.color.THECOLORS['pink'])
+T1 = Tile(vertices=vertices,
+          branch_points=[(0.5, 0.2)],
+          connections=[(0, 0, 1), (2, 0, 4), (3, 0, 5)],
+          background=pygame.Color(pygame.color.THECOLORS['blue']))
 
-pygame.draw.circle(s, pygame.color.THECOLORS['blue'], P1, 5, 0)
-pygame.draw.circle(s, pygame.color.THECOLORS['blue'], N1, 5, 0)
-pygame.draw.circle(s, pygame.color.THECOLORS['blue'], N2, 5, 0)
-pygame.draw.circle(s, pygame.color.THECOLORS['blue'], P2, 5, 0)
-bs = bezier(P1, N1, N2, P2, ts)
-print(bs.shape)
-print(bs)
-b0 = bs[0]
-for b in bs[1:]:
-    pygame.draw.line(s, pygame.color.THECOLORS['white'], b0, b, 1)
-    b0 = b
+s = pygame.Surface((500, 500))
+s.fill(color=pygame.Color(pygame.color.THECOLORS['black']))
+T1.draw(PlaneLineArtist(s), pygame.Color(pygame.color.THECOLORS['pink']))
+
+# s = pygame.Surface((500, 500), flags=pygame.SRCALPHA)
+# s.fill(pygame.Color(0, 0, 0, 255))
+# ts = numpy.linspace(0.0, 1.0, 30)
+# pygame.draw.circle(s, pygame.color.THECOLORS['blue'], P1, 5, 0)
+# pygame.draw.circle(s, pygame.color.THECOLORS['blue'], N1, 5, 0)
+# pygame.draw.circle(s, pygame.color.THECOLORS['blue'], N2, 5, 0)
+# pygame.draw.circle(s, pygame.color.THECOLORS['blue'], P2, 5, 0)
+# bs = bezier(P1, N1, N2, P2, ts)
+# print(bs.shape)
+# print(bs)
+# b0 = bs[0]
+# for b in bs[1:]:
+#     pygame.draw.line(s, pygame.color.THECOLORS['white'], b0, b, 1)
+#     b0 = b
 show_canvas.show_canvas(s)
