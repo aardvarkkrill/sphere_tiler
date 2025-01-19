@@ -199,7 +199,7 @@ class Tile(object):
                 for i in range(1, len(ts)):
                     b = bs[i]
                     line_artist.stroke(
-                        b0, b, expand_colour(colourspec, frac, ts[i]), 2)
+                        b0, b, expand_colour(colourspec, frac, ts[i]), 1)
                     b0 = b
 
     def endpoints(self, edge_index: int,
@@ -339,25 +339,7 @@ def multiple_ribbons_tile():
     return s
 
 
-# T1.draw(PlaneLineArtist(s), pygame.Color(pygame.color.THECOLORS['magenta']))
-
-
-# s = pygame.Surface((500, 500), flags=pygame.SRCALPHA)
-# s.fill(pygame.Color(0, 0, 0, 255))
-# ts = numpy.linspace(0.0, 1.0, 30)
-# pygame.draw.circle(s, pygame.color.THECOLORS['blue'], P1, 5, 0)
-# pygame.draw.circle(s, pygame.color.THECOLORS['blue'], N1, 5, 0)
-# pygame.draw.circle(s, pygame.color.THECOLORS['blue'], N2, 5, 0)
-# pygame.draw.circle(s, pygame.color.THECOLORS['blue'], P2, 5, 0)
-# bs = bezier(P1, N1, N2, P2, ts)
-# print(bs.shape)
-# print(bs)
-# b0 = bs[0]
-# for b in bs[1:]:
-#     pygame.draw.line(s, pygame.color.THECOLORS['white'], b0, b, 1)
-#     b0 = b
-
-def tiling_test():
+def hexagons_and_rhombii():
     tiles = []
     cols, rows = 12, 9
     tile_width = 2 / cols  # model space is [-1,+1]
@@ -401,7 +383,8 @@ def tiling_test():
         (imsize, round(imsize * tile_height * rows / (cols * tile_width))))
     s.fill(color=pygame.Color(pygame.color.THECOLORS['black']))
     for tile in tiles:
-        tile.draw(PlaneLineArtist(s), rainbow_length)
+        # tile.draw(PlaneLineArtist(s), rainbow_length)
+        tile.draw(PlaneLineArtist(s), rainbow)
     show_canvas.show_canvas(s)
     pygame.image.save(s, 'hexagons_and_rhombii.jpg')
     return s
@@ -413,4 +396,4 @@ def tiling_test():
 # rainbow_hex_tile()
 
 # multiple_ribbons_tile()
-tiling_test()
+hexagons_and_rhombii()
