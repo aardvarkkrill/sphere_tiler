@@ -4,6 +4,8 @@ import math
 import numpy
 import pygame
 
+import show_canvas
+
 Point2 = numpy.ndarray  # must be 2x1 element column vector.
 Vertices = list[Point2]
 
@@ -31,6 +33,10 @@ class LineArtist(object):
 
 
 class PlaneLineArtist(LineArtist):
+    """ An artist which maps 2D model space to the Euclidean plane.
+        Model space is assumed to be in [-1,1] x [-1,1]
+    """
+
     def __init__(self, surface: pygame.Surface):
         self.surface = surface
         self.centre = numpy.array((surface.get_width() / 2,
@@ -77,22 +83,23 @@ class Tile(object):
     def __init__(self,
                  vertices: Vertices,
                  branch_points: List[Tuple[float, float]],
-                 connections: List[Tuple[int, int, int]],
+                 ribbons: List[Tuple[int, int, int, int]],
                  background: pygame.Color = pygame.Color(0, 0, 0, 255)
                  ):
         """ Builds a polygonal tile that can draw itself.
         vertices: the vertices in anti-clockwise order.  These are in some
                   model space [-1,1]^2 with a right-handed coordinate system.
         branch_points: each edge of the tile has a number of sites where
-                  branches begin.  These are centred at the given fractions of
+                  ribbons begin.  These are centred at the given fractions of
                   distance along the edges, and width a given fraction of the
-                  distance along the edge.  If there are n branches they are
-                  indexed as 0...n-1
-        connections: a list of triples [from_edge, branch_index, to_edge]
+                  distance along the edge.  If there are n branch points they
+                  are indexed as 0...n-1
+        ribbons: a list of tuplss (from_edge, from_branch_index,
+                                   to_edge, to_branch_index)
         """
         self.background = background
         self.vertices = vertices
-        self.connections = connections
+        self.ribbons = ribbons
         self.branch_points = branch_points
         self.N = len(vertices)
 
@@ -113,51 +120,64 @@ class Tile(object):
                                    pygame.color.THECOLORS['green']),
                                width=2)
         # fraction of the normal to the separation
-        normal_scale = 0.3
-        for connection in self.connections:
-            from_edge, branch_index, to_edge = connection
+        normal_scale = 0.5
+        for ribbon in self.ribbons:
+            from_edge, from_branch_index, to_edge, to_branch_index = ribbon
             a1, b1 = self.endpoints(from_edge, transform)
             a2, b2 = self.endpoints(to_edge, transform)
             n1 = self.edge_normal(a1, b1)
             n2 = self.edge_normal(a2, b2)
-            branch_centre = self.branch_points[branch_index][0]
-            halfwidth = self.branch_points[branch_index][1] * 0.5
+            branch_centre1 = self.branch_points[from_branch_index][0]
+            branch_centre2 = self.branch_points[to_branch_index][0]
+            halfwidth1 = self.branch_points[from_branch_index][1] * 0.5
+            halfwidth2 = self.branch_points[to_branch_index][1] * 0.5
 
-            def fraction_to_control_points_model(branch_fraction_: float):
-                P1 = a1 + (b1 - a1) * branch_fraction_
-                P2 = a2 + (b2 - a2) * (1.0 - branch_fraction_)
-                N1 = P1 + n1 * numpy.linalg.norm(b1 - a1) * normal_scale
-                N2 = P2 + n2 * numpy.linalg.norm(b2 - a2) * normal_scale
+            def fraction_to_control_points_model(branch_fraction1_: float,
+                                                 branch_fraction2_: float):
+                P1 = a1 + (b1 - a1) * branch_fraction1_
+                P2 = a2 + (b2 - a2) * branch_fraction2_
+                normal_size = numpy.linalg.norm(P2 - P1) * normal_scale
+                N1, N2 = P1 + n1 * normal_size, P2 + n2 * normal_size
                 return P1, N1, N2, P2
 
-            def estimate_pixel_width_at_branch_fraction(
-                    branch_fraction_: float):
-                ps = fraction_to_control_points_model(branch_fraction_)
-                pxa = line_artist.camera_to_image_space(
-                    line_artist.model_to_camera_space(ps[0]))
-                pxb = line_artist.camera_to_image_space(
-                    line_artist.model_to_camera_space(ps[3]))
-                return numpy.linalg.norm(pxa - pxb)
+            def image_pixel_positions_at_branch_fraction(
+                    branch_fraction1_: float,
+                    branch_fraction2_: float,
+                    ts_: numpy.ndarray):
+                controls = fraction_to_control_points_model(branch_fraction1_,
+                                                            branch_fraction2_)
+                interpolate = bezier(*controls, ts_)
+                pixels = line_artist.camera_to_image_space(
+                    line_artist.model_to_camera_space(interpolate))
+                return pixels
 
             # find the length of the base lines in pixels, and choose the max,
-            # to estimate the number of samples required
-            est_width_s = estimate_pixel_width_at_branch_fraction(
-                branch_centre - halfwidth)
-            est_width_f = estimate_pixel_width_at_branch_fraction(
-                branch_centre + halfwidth)
-            samples = round(2 + 2 * max(est_width_s, est_width_f))
-            for branch_fraction in numpy.linspace(branch_centre - halfwidth,
-                                                  branch_centre + halfwidth,
-                                                  samples):
+            # to estimate the number of samples required across the ribbon
+            pixels_at_ribbon_edge0 = image_pixel_positions_at_branch_fraction(
+                branch_centre1 - halfwidth1,
+                branch_centre2 + halfwidth2,
+                numpy.array([0.0, 0.5, 1.0])
+            )
+            pixels_at_ribbon_edge1 = image_pixel_positions_at_branch_fraction(
+                branch_centre1 + halfwidth1,
+                branch_centre2 - halfwidth2,
+                numpy.array([0.0, 0.5, 1.0])
+            )
+            est_max_distance = max([numpy.linalg.norm(p0 - p1) for (p0, p1) in
+                                    zip(pixels_at_ribbon_edge0,
+                                        pixels_at_ribbon_edge1)])
+            samples = round(2 + 2 * est_max_distance)
+            for frac in numpy.linspace(-1.0, 1.0, samples):
+                branch_fraction1 = branch_centre1 + frac * halfwidth1
+                branch_fraction2 = branch_centre2 - frac * halfwidth2
                 control_points = fraction_to_control_points_model(
-                    branch_fraction)
+                    branch_fraction1, branch_fraction2)
                 ts = numpy.linspace(0.0, 1.0, 50)
                 bs = bezier(*control_points, ts)
                 b0 = bs[0]
                 for b in bs[1:]:
-                    line_artist.stroke(b0, b, expand_colour(colourspec, (
-                            branch_fraction - branch_centre) / halfwidth),
-                                       2)
+                    line_artist.stroke(
+                        b0, b, expand_colour(colourspec, frac), 2)
                     b0 = b
 
     def endpoints(self, edge_index: int,
@@ -179,25 +199,6 @@ class Tile(object):
         return normal / numpy.linalg.norm(normal)
 
 
-import show_canvas
-
-N = 7
-vertices = []
-for i in range(N):
-    theta = 2 * i * math.pi / N
-    vertices.append(numpy.array((math.cos(theta), math.sin(theta))))
-
-T1 = Tile(vertices=vertices,
-          branch_points=[(0.5, 1.0)],
-          connections=[(0, 0, 1), (2, 0, 4), (3, 0, 5)],
-          background=pygame.Color(pygame.color.THECOLORS['blue']))
-
-s = pygame.Surface((500, 500))
-s.fill(color=pygame.Color(pygame.color.THECOLORS['black']))
-
-
-# T1.draw(PlaneLineArtist(s), pygame.Color(pygame.color.THECOLORS['magenta']))
-
 def rainbow(fraction: float) -> pygame.Color:
     c = pygame.Color(0)
     c.hsva = (
@@ -206,7 +207,52 @@ def rainbow(fraction: float) -> pygame.Color:
     return c
 
 
-T1.draw(PlaneLineArtist(s), rainbow)
+def rainbow_hex_tile():
+    N = 6
+    vertices = []
+    for i in range(N):
+        theta = 2 * i * math.pi / N
+        vertices.append(numpy.array((math.cos(theta), math.sin(theta))))
+
+    T1 = Tile(vertices=vertices,
+              branch_points=[(0.5, 1.0)],
+              ribbons=[(0, 0, 1, 0), (2, 0, 4, 0), (3, 0, 5, 0)],
+              background=pygame.Color(pygame.color.THECOLORS['blue']))
+
+    s = pygame.Surface((500, 500))
+    s.fill(color=pygame.Color(pygame.color.THECOLORS['black']))
+    T1.draw(PlaneLineArtist(s), rainbow)
+    show_canvas.show_canvas(s)
+    return s
+
+
+def multiple_ribbons_tile():
+    N = 5
+    vertices = []
+    for i in range(N):
+        theta = 2 * i * math.pi / N
+        vertices.append(numpy.array((math.cos(theta), math.sin(theta))))
+
+    T1 = Tile(vertices=vertices,
+              branch_points=[(1 / 4, 1 / 3), (3 / 4, 1 / 3)],
+              ribbons=
+                  list([(i, 0, (i+1)%N, 1) for i in range(N)]),
+              # [
+              #     (0, 0, 1, 0), (0, 1, 2, 1), (1, 1, 2, 0)
+              #     # (0, 0, 1, 1), (2, 0, 4, 1), (3, 0, 6, 1), (5, 0, 7, 1),
+              #     # (0, 1, 0, 0), (2, 1, 4, 0), (3, 1, 6, 0), (5, 1, 7, 0)
+              # ],
+              background=pygame.Color(pygame.color.THECOLORS['blue']))
+
+    s = pygame.Surface((500, 500))
+    s.fill(color=pygame.Color(pygame.color.THECOLORS['black']))
+    T1.draw(PlaneLineArtist(s), rainbow)
+    show_canvas.show_canvas(s)
+    return s
+
+
+# T1.draw(PlaneLineArtist(s), pygame.Color(pygame.color.THECOLORS['magenta']))
+
 
 # s = pygame.Surface((500, 500), flags=pygame.SRCALPHA)
 # s.fill(pygame.Color(0, 0, 0, 255))
@@ -222,4 +268,11 @@ T1.draw(PlaneLineArtist(s), rainbow)
 # for b in bs[1:]:
 #     pygame.draw.line(s, pygame.color.THECOLORS['white'], b0, b, 1)
 #     b0 = b
-show_canvas.show_canvas(s)
+
+
+##############################################################################
+# Examples
+
+# rainbow_hex_tile()
+
+multiple_ribbons_tile()
