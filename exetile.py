@@ -95,7 +95,7 @@ class Tile(object):
                  branch_points: List[Tuple[float, float]],
                  ribbons: List[Tuple[int, int, int, int]],
                  background: pygame.Color = None,
-                 normal_scale: float = 0.5
+                 normal_scale: float = None
                  ):
         """ Builds a polygonal tile that can draw itself.
         vertices: the vertices in anti-clockwise order.  These are in some
@@ -117,7 +117,7 @@ class Tile(object):
         self.ribbons = ribbons
         self.branch_points = branch_points
         self.N = len(vertices)
-        self.normal_scale = normal_scale
+        self.normal_scale = 0.5 if normal_scale is None else normal_scale
 
     @staticmethod
     def do_transform(point, transform):
@@ -130,6 +130,11 @@ class Tile(object):
              ):
         """ draw the tile given a projection matrix to image space.
         """
+        if self.background is not None:
+            line_artist.fill(
+                list(self.do_transform(p, transform) for p in self.vertices),
+                self.background)
+
         for i in range(self.N):
             line_artist.stroke(a=self.do_transform(self.vertices[i], transform),
                                b=self.do_transform(
@@ -137,13 +142,11 @@ class Tile(object):
                                colour=pygame.Color(
                                    pygame.color.THECOLORS['green']),
                                width=1)
-        if self.background is not None:
-            line_artist.fill(
-                list(self.do_transform(p, transform) for p in self.vertices),
-                self.background)
 
         for ribbon in self.ribbons:
-            from_edge, from_branch_index, to_edge, to_branch_index = ribbon
+            from_edge, from_branch_index, to_edge, to_branch_index = ribbon[:4]
+            cspec = ribbon[4] if len(ribbon) == 5 else colourspec
+
             a1, b1 = self.endpoints(from_edge, transform)
             a2, b2 = self.endpoints(to_edge, transform)
             n1 = self.edge_normal(a1, b1)
@@ -199,7 +202,7 @@ class Tile(object):
                 for i in range(1, len(ts)):
                     b = bs[i]
                     line_artist.stroke(
-                        b0, b, expand_colour(colourspec, frac, ts[i]), 1)
+                        b0, b, expand_colour(cspec, frac, ts[i]), 2)
                     b0 = b
 
     def endpoints(self, edge_index: int,
@@ -244,7 +247,8 @@ def regular_tile_maker(N: int, centre: Point2, scale: float, rotate: int,
                        reflect: bool,
                        background=None,
                        branch_points=None,
-                       ribbons=None
+                       ribbons=None,
+                       normal_scale=None
                        ) -> Tile:
     vertices = []
     flip = -1 if reflect else +1
@@ -263,7 +267,8 @@ def regular_tile_maker(N: int, centre: Point2, scale: float, rotate: int,
     return Tile(vertices=vertices,
                 branch_points=branch_points,
                 ribbons=ribbons,
-                background=background)
+                background=background,
+                normal_scale=normal_scale)
 
 
 def diamond_tile_maker(centre: Point2, scale: float, rotate: int,
@@ -339,9 +344,13 @@ def multiple_ribbons_tile():
     return s
 
 
-def hexagons_and_rhombii():
+def hexagons_and_rhombii(backgrounds: Optional[List[pygame.Color]] = None,
+                         branch_points = None,
+                         ribbons_hex = None,
+                         ribbons_diamond = None,
+                         ):
     tiles = []
-    cols, rows = 12, 9
+    cols, rows = 8, 5
     tile_width = 2 / cols  # model space is [-1,+1]
     tile_radius = tile_width / 2
     tile_height = tile_width * math.sqrt(3) / 2
@@ -349,46 +358,76 @@ def hexagons_and_rhombii():
     ycentres = numpy.linspace(- tile_height * (rows - 1) / 2,
                               tile_height * (rows - 1) / 2, rows)
 
-    branch_points = [(1 / 4, 1 / 8), (3 / 4, 1 / 8)]
+    if branch_points is None:
+        branch_points = [(1 / 4, 1 / 8), (3 / 4, 1 / 8)]
 
-    def diamond(x, y, rot_, reflect_):
+    def diamond(x, y, rot_, reflect_, bg_, branch_points_, ribbons_):
         return diamond_tile_maker(
             numpy.array((x, y)),
-            tile_radius, rot_, reflect_, branch_points=branch_points)
+            tile_radius, rot_, reflect_,
+            background=bg_,
+            branch_points=branch_points_,
+            ribbons=ribbons_)
+
+    def choose_bg():
+        if backgrounds is None:
+            return None
+        return random.choice(backgrounds)
 
     for x in xcentres:
         for y in ycentres:
             rot = random.randint(0, 5)
             reflect = random.choice((True, False))
+            bg_hex = choose_bg()
+            bg_diamond = choose_bg()
             tiles.append(regular_tile_maker(
                 6, numpy.array([x, y]), tile_radius, rot, reflect,
-                branch_points=branch_points))
+                background=bg_hex,
+                branch_points=branch_points,
+                ribbons=ribbons_hex,
+                normal_scale=0.4))
             tiles.append(diamond(
-                x - tile_radius, y - tile_height / 2, rot, reflect))
+                x - tile_radius, y - tile_height / 2, rot, reflect,
+                bg_diamond, branch_points, ribbons_diamond))
             if x == xcentres[0]:
                 tiles.append(
                     diamond(xcentres[-1] + tile_radius, y - tile_height / 2,
-                            rot, reflect))
+                            rot, reflect, bg_diamond, branch_points, ribbons_diamond))
             if y == ycentres[0]:
                 tiles.append(
                     diamond(x - tile_radius, ycentres[-1] + tile_height / 2,
-                            rot, reflect))
+                            rot, reflect, bg_diamond, branch_points, ribbons_diamond))
             if x == xcentres[0] and y == ycentres[0]:
                 tiles.append(diamond(xcentres[-1] + tile_radius,
                                      ycentres[-1] + tile_height / 2, rot,
-                                     reflect))
+                                     reflect, bg_diamond, branch_points, ribbons_diamond))
 
     imsize = 1920
     s = pygame.Surface(
         (imsize, round(imsize * tile_height * rows / (cols * tile_width))))
     s.fill(color=pygame.Color(pygame.color.THECOLORS['black']))
     for tile in tiles:
-        # tile.draw(PlaneLineArtist(s), rainbow_length)
-        tile.draw(PlaneLineArtist(s), rainbow)
+        tile.draw(PlaneLineArtist(s), rainbow_length)
+        # tile.draw(PlaneLineArtist(s), rainbow)
     show_canvas.show_canvas(s)
     pygame.image.save(s, 'hexagons_and_rhombii.jpg')
     return s
 
+
+def pastel_hexagons_and_rhombii():
+    pastels = list(pygame.Color(c) for c in ['0xfd8a8a', '0xffcbcb', '0x9ea1d4',
+                   '0xf1f7b5', '0xa8d1d1', '0xdfebeb'])
+    branch_points = [(1 / 4, 1 / 12), (1 / 2, 1/12), (3 / 4, 1 / 12)]
+    ribbons_hex = (
+            list((i, 1, (i + 2) % 6, 1, rainbow) for i in range(6))
+                   +
+            list((i, 0, (i + 1) % 6, 2) for i in range(6))
+    )
+    ribbons_diamonds = [
+            (0, 1, 2, 1, rainbow), (1, 1, 3, 1, rainbow),
+            (0, 0, 2, 2), (0, 2, 1, 0), (1, 2, 3, 0), (2, 0, 3, 2),
+    ]
+    hexagons_and_rhombii(pastels, branch_points, ribbons_hex, ribbons_diamonds)
 
 ##############################################################################
 # Examples
@@ -396,4 +435,6 @@ def hexagons_and_rhombii():
 # rainbow_hex_tile()
 
 # multiple_ribbons_tile()
-hexagons_and_rhombii()
+# hexagons_and_rhombii()
+pastel_hexagons_and_rhombii()
+
