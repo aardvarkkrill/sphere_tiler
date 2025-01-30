@@ -121,19 +121,23 @@ class Tile(object):
 
     @staticmethod
     def do_transform(point, transform):
-        return point if transform is None else ([*point, 1.0] @ transform)[:-1]
+        return point if transform is None else (transform @ [*point, 1.0])[:-1]
 
     def draw(self,
              line_artist: LineArtist,
              colourspec=pygame.color.THECOLORS['white'],
              transform: numpy.ndarray = None,
+             override_bg=None,
              ):
         """ draw the tile given a projection matrix to image space.
         """
-        if self.background is not None:
+        bg = self.background
+        if override_bg is not None:
+            bg = override_bg
+        if bg is not None:
             line_artist.fill(
                 list(self.do_transform(p, transform) for p in self.vertices),
-                self.background)
+                bg)
 
         for i in range(self.N):
             line_artist.stroke(a=self.do_transform(self.vertices[i], transform),
@@ -432,9 +436,10 @@ def pastel_hexagons_and_rhombii():
 ##############################################################################
 # Examples
 
-# rainbow_hex_tile()
+if __name__ == "__main__":
+    # rainbow_hex_tile()
 
-# multiple_ribbons_tile()
-# hexagons_and_rhombii()
-pastel_hexagons_and_rhombii()
+    # multiple_ribbons_tile()
+    # hexagons_and_rhombii()
+    pastel_hexagons_and_rhombii()
 
